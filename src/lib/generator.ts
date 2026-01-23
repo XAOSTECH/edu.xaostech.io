@@ -254,6 +254,66 @@ function getCacheKey(request: GenerateExerciseRequest): string {
 }
 
 /**
+ * Generate a fallback exercise when AI fails
+ */
+function generateFallbackExercise(
+    request: GenerateExerciseRequest,
+    subjectConfig: typeof SUBJECT_CONFIGS[Subject]
+): Exercise {
+    const id = generateExerciseId(request.subject, request.category || 'fallback');
+
+    // Create a simple multiple-choice fallback based on subject
+    const fallbackContent: MultipleChoiceContent = {
+        type: 'multiple-choice',
+        question: `This is a ${request.difficulty} level ${request.subject} question about ${request.topic}. (AI generation temporarily unavailable - using fallback)`,
+        options: [
+            { id: 'a', text: 'Option A (placeholder)' },
+            { id: 'b', text: 'Option B (placeholder)' },
+            { id: 'c', text: 'Option C (placeholder)' },
+            { id: 'd', text: 'Option D (placeholder)' },
+        ],
+        multiSelect: false,
+    };
+
+    return {
+        id,
+        subject: request.subject,
+        category: (request.category || subjectConfig.categories[0]) as SubjectCategory,
+        difficulty: request.difficulty,
+        type: 'multiple-choice',
+        topic: request.topic,
+        problem: {
+            instruction: 'Select the correct answer.',
+            content: fallbackContent,
+            maxPoints: getDifficultyPoints(request.difficulty),
+        },
+        solution: {
+            correctAnswer: 'a',
+            explanation: 'This is a fallback exercise. Please try again later for AI-generated content.',
+        },
+        hints: ['Try refreshing the page', 'AI service may be temporarily unavailable'],
+        validation: {
+            ...subjectConfig.validationDefaults,
+            passingScore: 70,
+            allowPartialCredit: true,
+            caseSensitive: false,
+            hintPenalty: 5,
+        } as ValidationRules,
+        metadata: {
+            createdAt: new Date().toISOString(),
+            generatedBy: 'fallback',
+            tags: [request.topic, request.subject, 'fallback'],
+            estimatedTime: getDefaultTime(request.difficulty),
+            language: request.language || 'en',
+            version: 1,
+        },
+    };
+}
+
+// Import for fallback type
+type MultipleChoiceContent = import('../types/exercise').MultipleChoiceContent;
+
+/**
  * Main exercise generation function
  */
 export async function generateExercise(
@@ -269,60 +329,122 @@ export async function generateExercise(
 
     const count = Math.min(request.count || 1, parseInt(env.MAX_EXERCISES_PER_REQUEST) || 10);
     const exercises: Exercise[] = [];
-    const model = selectModel(env, request);
+    let model = selectModel(env, request);
+    let aiError: string | null = null;
 
     // Check cache for similar exercises (if KV is configured)
     const cacheKey = getCacheKey(request);
-    const cached = env.EXERCISES_KV ? await env.EXERCISES_KV.get(cacheKey) : null;
+    try {
+        const cached = env.EXERCISES_KV ? await env.EXERCISES_KV.get(cacheKey) : null;
 
-    if (cached && count === 1) {
-        const cachedExercise = JSON.parse(cached) as Exercise;
-        return {
-            exercises: [cachedExercise],
-            meta: {
-                model,
-                generatedAt: new Date().toISOString(),
-                cached: true,
-            },
-        };
+        if (cached && count === 1) {
+            const cachedExercise = JSON.parse(cached) as Exercise;
+            return {
+                exercises: [cachedExercise],
+                meta: {
+                    model,
+                    generatedAt: new Date().toISOString(),
+                    cached: true,
+                },
+            };
+        }
+    } catch (cacheError) {
+        console.warn('[GENERATOR] Cache lookup failed:', cacheError);
     }
 
-    // Generate exercises
+    // Check if AI binding is available
+    if (!env.AI) {
+        console.error('[GENERATOR] AI binding not configured');
+        aiError = 'AI binding not configured - check wrangler.toml';
+    }
+
+    // Define model fallback chain
+    const modelFallbackChain = [
+        model,
+        env.DEFAULT_MODEL || '@cf/meta/llama-3.2-3b-instruct',
+        '@cf/meta/llama-3.2-1b-instruct', // Even lighter model
+    ].filter((m, i, arr) => arr.indexOf(m) === i); // Remove duplicates
+
+    // Generate exercises with fallback chain
     for (let i = 0; i < count; i++) {
         const { systemPrompt, userPrompt } = buildGenerationPrompt(request, subjectConfig);
+        let generated = false;
 
-        try {
-            const aiResponse = await env.AI.run(model, {
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt },
-                ],
-                max_tokens: 2000,
-                temperature: 0.7,
-            });
+        // Try each model in the fallback chain
+        for (const currentModel of modelFallbackChain) {
+            if (generated) break;
+            if (!env.AI) break;
 
-            const responseText = aiResponse.response || '';
-            const exercise = parseAIResponse(responseText, request, subjectConfig, model);
+            try {
+                console.log(`[GENERATOR] Attempting with model: ${currentModel}`);
 
-            if (exercise) {
-                exercises.push(exercise);
+                const aiResponse = await env.AI.run(currentModel, {
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt },
+                    ],
+                    max_tokens: 2000,
+                    temperature: 0.7,
+                });
 
-                // Cache successful generation (if KV is configured)
-                if (count === 1 && env.EXERCISES_KV) {
-                    await env.EXERCISES_KV.put(
-                        cacheKey,
-                        JSON.stringify(exercise),
-                        { expirationTtl: parseInt(env.CACHE_TTL_SECONDS) || 86400 }
-                    );
+                const responseText = aiResponse.response || '';
+
+                if (!responseText) {
+                    console.warn(`[GENERATOR] Empty response from ${currentModel}`);
+                    continue;
+                }
+
+                const exercise = parseAIResponse(responseText, request, subjectConfig, currentModel);
+
+                if (exercise) {
+                    exercises.push(exercise);
+                    model = currentModel; // Update to the model that worked
+                    generated = true;
+
+                    // Cache successful generation (if KV is configured)
+                    if (count === 1 && env.EXERCISES_KV) {
+                        try {
+                            await env.EXERCISES_KV.put(
+                                cacheKey,
+                                JSON.stringify(exercise),
+                                { expirationTtl: parseInt(env.CACHE_TTL_SECONDS) || 86400 }
+                            );
+                        } catch (cacheWriteError) {
+                            console.warn('[GENERATOR] Cache write failed:', cacheWriteError);
+                        }
+                    }
+                } else {
+                    console.warn(`[GENERATOR] Failed to parse response from ${currentModel}`);
+                }
+            } catch (modelError: any) {
+                const errorMsg = modelError?.message || String(modelError);
+                console.error(`[GENERATOR] Model ${currentModel} failed:`, errorMsg);
+                aiError = errorMsg;
+
+                // Check for rate limit
+                if (errorMsg.includes('rate') || errorMsg.includes('limit') || errorMsg.includes('quota')) {
+                    console.warn('[GENERATOR] Rate limit detected, trying lighter model');
+                    continue;
+                }
+
+                // Check for model not found
+                if (errorMsg.includes('not found') || errorMsg.includes('invalid model')) {
+                    console.warn(`[GENERATOR] Model ${currentModel} not available`);
+                    continue;
                 }
             }
-        } catch (error) {
-            console.error(`[GENERATOR] Exercise ${i + 1} generation failed:`, error);
+        }
+
+        // If no AI models worked, use fallback exercise
+        if (!generated) {
+            console.warn(`[GENERATOR] All models failed for exercise ${i + 1}, using fallback`);
+            const fallbackExercise = generateFallbackExercise(request, subjectConfig);
+            exercises.push(fallbackExercise);
         }
     }
 
     if (exercises.length === 0) {
-        throw new Error('Failed to generate any valid exercises');
+        throw new Error(`Failed to generate exercises. ${aiError ? `AI Error: ${aiError}` : 'Unknown error'}`);
     }
 
     return {
@@ -331,6 +453,9 @@ export async function generateExercise(
             model,
             generatedAt: new Date().toISOString(),
             cached: false,
+            ...(aiError && exercises.some(e => e.metadata.generatedBy === 'fallback')
+                ? { warning: 'Some exercises used fallback due to AI unavailability' }
+                : {}),
         },
     };
 }
