@@ -1,0 +1,92 @@
+# =============================================================================
+# edu.xaostech.io - Educational Platform Worker
+# =============================================================================
+# AI-powered exercise generation for multiple subjects using Cloudflare Workers AI
+# Free tier: 10,000 neurons/day - sufficient for ~300-500 exercise generations
+# =============================================================================
+
+name = "edu-xaostech-io"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+send_metrics = false
+
+# -----------------------------------------------------------------------------
+# Routes - Production and Preview
+# -----------------------------------------------------------------------------
+routes = [
+  { pattern = "edu.xaostech.io", custom_domain = true }
+]
+
+# -----------------------------------------------------------------------------
+# KV Namespaces - Exercise caching and user progress
+# -----------------------------------------------------------------------------
+[[kv_namespaces]]
+binding = "EXERCISES_KV"
+id = "EXERCISES_KV_ID"
+preview_id = "EXERCISES_KV_PREVIEW_ID"
+
+[[kv_namespaces]]
+binding = "PROGRESS_KV"
+id = "PROGRESS_KV_ID"
+preview_id = "PROGRESS_KV_PREVIEW_ID"
+
+# -----------------------------------------------------------------------------
+# D1 Database - Exercise history and analytics
+# -----------------------------------------------------------------------------
+[[d1_databases]]
+binding = "EDU_DB"
+database_name = "edu-xaostech-db"
+database_id = "EDU_DB_ID"
+
+# -----------------------------------------------------------------------------
+# Workers AI - The core of exercise generation
+# -----------------------------------------------------------------------------
+# Models available on free tier (10,000 neurons/day):
+# - @cf/meta/llama-3.2-3b-instruct (fast, good for simple exercises)
+# - @cf/meta/llama-3.1-8b-instruct-fast (balanced quality/speed)
+# - @cf/qwen/qwen3-30b-a3b-fp8 (high quality, more neurons per request)
+# - @cf/ibm-granite/granite-4.0-h-micro (efficient, good reasoning)
+# -----------------------------------------------------------------------------
+[ai]
+binding = "AI"
+
+# -----------------------------------------------------------------------------
+# Environment Variables
+# -----------------------------------------------------------------------------
+[vars]
+ENVIRONMENT = "development"
+DEFAULT_MODEL = "@cf/meta/llama-3.2-3b-instruct"
+QUALITY_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"
+REASONING_MODEL = "@cf/qwen/qwq-32b"
+CACHE_TTL_SECONDS = "86400"
+MAX_EXERCISES_PER_REQUEST = "10"
+RATE_LIMIT_PER_MINUTE = "30"
+
+# Lingua integration for translations
+LINGUA_API_URL = "https://lingua.xaostech.io"
+
+# Subject-specific settings
+SUPPORTED_SUBJECTS = "language,mathematics,physics,chemistry,biology,history,geography,computer-science"
+
+# -----------------------------------------------------------------------------
+# Production Environment
+# -----------------------------------------------------------------------------
+[env.production]
+name = "edu-xaostech-io"
+routes = [
+  { pattern = "edu.xaostech.io", custom_domain = true }
+]
+
+[env.production.vars]
+ENVIRONMENT = "production"
+RATE_LIMIT_PER_MINUTE = "60"
+
+# -----------------------------------------------------------------------------
+# Staging Environment
+# -----------------------------------------------------------------------------
+[env.staging]
+name = "edu-xaostech-io-staging"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
