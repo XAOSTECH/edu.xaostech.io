@@ -73,7 +73,7 @@ SUPPORTED_SUBJECTS = "language,mathematics,physics,chemistry,biology,history,geo
 # Production Environment
 # -----------------------------------------------------------------------------
 [env.production]
-name = "edu-xaostech-io"
+name = "xaostech-edu"
 routes = [
   { pattern = "edu.xaostech.io", custom_domain = true }
 ]
