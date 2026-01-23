@@ -1,0 +1,45 @@
+# =============================================================================
+# edu.xaostech.io - Educational Platform Worker
+# =============================================================================
+name = "xaostech-edu"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+send_metrics = false
+
+# =============================================================================
+# Production Environment
+# =============================================================================
+[env.production]
+name = "xaostech-edu"
+main = "src/index.ts"
+routes = [
+  { pattern = "edu.xaostech.io", custom_domain = true }
+]
+
+[[env.production.kv_namespaces]]
+binding = "EXERCISES_KV"
+id = "${KV_EXERCISES_ID}"
+
+[[env.production.kv_namespaces]]
+binding = "PROGRESS_KV"
+id = "${KV_PROGRESS_ID}"
+
+[[env.production.d1_databases]]
+binding = "EDU_DB"
+database_name = "edu-xaostech-db"
+database_id = "${D1_EDU_DB_ID}"
+
+[env.production.ai]
+binding = "AI"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+DEFAULT_MODEL = "@cf/meta/llama-3.2-3b-instruct"
+QUALITY_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"
+REASONING_MODEL = "@cf/qwen/qwq-32b"
+CACHE_TTL_SECONDS = "86400"
+MAX_EXERCISES_PER_REQUEST = "10"
+RATE_LIMIT_PER_MINUTE = "60"
+LINGUA_API_URL = "https://lingua.xaostech.io"
+SUPPORTED_SUBJECTS = "language,mathematics,physics,chemistry,biology,history,geography,computer-science"
