@@ -1,0 +1,30 @@
+{
+    "name": "edu.xaostech.io",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "XAOSTECH Educational Platform - AI-powered exercise generation for languages, mathematics, sciences, and more",
+    "main": "src/index.ts",
+    "scripts": {
+        "dev": "wrangler dev",
+        "build": "echo 'no build required for edu.xaostech.io'",
+        "deploy": "wrangler deploy"
+    },
+    "keywords": [
+        "education",
+        "ai",
+        "cloudflare-workers",
+        "exercise-generation",
+        "language-learning",
+        "mathematics",
+        "adaptive-learning"
+    ],
+    "author": "XAOSTECH",
+    "license": "MIT",
+    "dependencies": {
+        "hono": "latest"
+    },
+    "devDependencies": {
+        "wrangler": "latest",
+        "typescript": "latest"
+    }
+}

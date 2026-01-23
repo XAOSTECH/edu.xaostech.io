@@ -3,7 +3,7 @@
 <!-- Project Shields/Badges -->
 <p align="center">
   <a href="https://github.com/XAOSTECH/edu.xaostech.io">
-    <img alt="GitHub repo" src="https://img.shields.io/badge/GitHub-XAOSTECH%2F-edu.xaostech.io-181717?style=for-the-badge&logo=github">
+    <img alt="GitHub repo" src="https://img.shields.io/badge/GitHub-XAOSTECH%2Fedu.xaostech.io-181717?style=for-the-badge&logo=github">
   </a>
   <a href="https://github.com/XAOSTECH/edu.xaostech.io/releases">
     <img alt="GitHub release" src="https://img.shields.io/github/v/release/XAOSTECH/edu.xaostech.io?style=for-the-badge&logo=semantic-release&color=blue">
@@ -15,90 +15,223 @@
 
 <p align="center">
   <a href="https://github.com/XAOSTECH/edu.xaostech.io/actions">
-    <img alt="CI Status" src="https://github.com/XAOSTECH/edu.xaostech.io/actions/workflows/bash-lint.yml/badge.svg?branch=Main>
+    <img alt="CI Status" src="https://github.com/XAOSTECH/edu.xaostech.io/actions/workflows/deploy.yml/badge.svg?branch=main">
   </a>
-  <a href="https://github.com/XAOSTECH/edu.xaostech.io/issues">
-    <img alt="Issues" src="https://img.shields.io/github/issues/XAOSTECH/edu.xaostech.io?style=flat-square&logo=github&color=yellow">
-  </a>
-  <a href="https://github.com/XAOSTECH/edu.xaostech.io/pulls">
-    <img alt="Pull Requests" src="https://img.shields.io/github/issues-pr/XAOSTECH/edu.xaostech.io?style=flat-square&logo=github&color=purple">
-  </a>
-  <a href="https://github.com/XAOSTECH/edu.xaostech.io/stargazers">
-    <img alt="Stars" src="https://img.shields.io/github/stars/XAOSTECH/edu.xaostech.io?style=flat-square&logo=github&color=gold">
-  </a>
-  <a href="https://github.com/XAOSTECH/edu.xaostech.io/network/members">
-    <img alt="Forks" src="https://img.shields.io/github/forks/XAOSTECH/edu.xaostech.io?style=flat-square&logo=github">
-  </a>
-</p>
-
-<p align="center">
-  <img alt="Last Commit" src="https://img.shields.io/github/last-commit/XAOSTECH/edu.xaostech.io?style=flat-square&logo=git&color=blue">
-  <img alt="Repo Size" src="https://img.shields.io/github/repo-size/XAOSTECH/edu.xaostech.io?style=flat-square&logo=files&color=teal">
-  <img alt="Code Size" src="https://img.shields.io/github/languages/code-size/XAOSTECH/edu.xaostech.io?style=flat-square&logo=files&color=orange">
-  <img alt="Contributors" src="https://img.shields.io/github/contributors/XAOSTECH/edu.xaostech.io?style=flat-square&logo=github&color=green">
-</p>
-
-<!-- Optional: Stability/Maturity Badge -->
-<p align="center">
-  <img alt="Stability" src="https://img.shields.io/badge/stability-stable-green?style=flat-square">
-  <img alt="Maintenance" src="https://img.shields.io/maintenance/yes/2026?style=flat-square">
+  <img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare">
+  <img alt="Workers AI" src="https://img.shields.io/badge/AI-Workers%20AI-F38020?style=flat-square&logo=cloudflare">
 </p>
 
 ---
 
 <p align="center">
-  <b>Educational Platform Worker</b>
+  <b>🎓 AI-Powered Educational Platform - Adaptive Exercise Generation</b>
 </p>
-
----
-
-## 📋 Table of Contents
-
-- [Overview](#-overview)
-- [Features](#-features)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [Configuration](#-configuration)
-- [Documentation](#-documentation)
-- [Contributing](#-contributing)
-- [Roadmap](#-roadmap)
-- [Support](#-support)
-- [License](#-license)
-- [Acknowledgments](#-acknowledgments)
 
 ---
 
 ## 🔍 Overview
 
-Educational Platform Worker
+edu.xaostech.io is an AI-powered educational platform built on Cloudflare Workers that generates adaptive exercises across multiple subjects. It uses **Cloudflare Workers AI** (free tier: 10,000 neurons/day) to create personalized learning experiences.
 
-### Why edu.xaostech.io?
+### Key Features
 
-{{WHY_PROJECT}}
-
----
-
-## ✨ Features
-
-- 🚀 **Feature 1** - Description of feature 1
-- 🔧 **Feature 2** - Description of feature 2
-- 📦 **Feature 3** - Description of feature 3
-- 🔒 **Feature 4** - Description of feature 4
-- ⚡ **Feature 5** - Description of feature 5
+- 🤖 **AI-Generated Exercises** - Powered by Llama 3.2, Qwen3, and other models
+- 📚 **8 Subjects** - Language, Mathematics, Physics, Chemistry, Biology, History, Geography, Computer Science
+- 🎯 **5 Difficulty Levels** - Beginner to Expert adaptive progression
+- ✅ **Automatic Validation** - Pass/fail grading with partial credit
+- 💡 **Progressive Hints** - Guided learning without giving away answers
+- 🌐 **Integration with Lingua** - Translation and etymology for language learning
 
 ---
 
-## 📥 Installation
+## ✨ Architecture
+
+```
+edu.xaostech.io (Cloudflare Worker)
+├── src/
+│   ├── index.ts          # Main Hono API
+│   ├── types/
+│   │   └── exercise.ts   # TypeScript interfaces + Subject configs
+│   └── lib/
+│       └── generator.ts  # AI exercise generation logic
+├── prompts/
+│   └── exercise-audit.prompt.yml  # GitHub Models audit prompt
+└── migrations/
+    └── 0001_init_schema.sql  # D1 database schema
+```
+
+### AI Models Used (Cloudflare Workers AI Free Tier)
+
+| Model | Use Case | Neurons/M Input |
+|-------|----------|-----------------|
+| `@cf/meta/llama-3.2-3b-instruct` | Fast, simple exercises | ~4.6k |
+| `@cf/meta/llama-3.1-8b-instruct-fast` | Quality balanced | ~4.1k |
+| `@cf/qwen/qwq-32b` | Math proofs, reasoning | ~60k |
+
+**Free Tier Capacity**: ~300-500 exercises/day depending on complexity.
+
+---
+
+## 📡 API Endpoints
+
+### Generate Exercises
+
+```bash
+POST /generate
+Content-Type: application/json
+
+{
+  "subject": "language",
+  "topic": "Spanish past tense verbs",
+  "difficulty": "intermediate",
+  "types": ["fill-blank", "conjugation"],
+  "count": 1,
+  "lessonContext": {
+    "title": "Preterite vs Imperfect",
+    "concepts": ["completed actions", "habitual past"],
+    "vocabulary": ["hablar", "comer", "vivir"]
+  }
+}
+```
+
+### Validate Answers
+
+```bash
+POST /validate
+Content-Type: application/json
+
+{
+  "exerciseId": "lan-voc-abc123",
+  "answer": "hablé",
+  "timeTaken": 45,
+  "hintsUsed": 1
+}
+```
+
+### List Subjects
+
+```bash
+GET /subjects
+GET /subjects/mathematics
+```
+
+### Get Hints
+
+```bash
+GET /hints/lan-voc-abc123?index=1
+```
+
+---
+
+## 🚀 Exercise Types Supported
+
+| Type | Description | Subjects |
+|------|-------------|----------|
+| `multiple-choice` | Select correct answer(s) | All |
+| `fill-blank` | Fill in missing parts | Language, Math |
+| `matching` | Match items | All |
+| `calculation` | Numerical computation | Math, Physics, Chemistry |
+| `proof` | Mathematical/logical proof | Math |
+| `translation` | Language translation | Language |
+| `conjugation` | Verb conjugation | Language |
+| `coding` | Programming exercises | Computer Science |
+
+---
+
+## 🛠️ Development
 
 ### Prerequisites
 
-- {{PREREQUISITE_1}}
-- {{PREREQUISITE_2}}
-- {{PREREQUISITE_3}}
+- Node.js 20+
+- Wrangler CLI (`npm i -g wrangler`)
+- Cloudflare account
 
-### Quick Start
+### Setup
 
 ```bash
+cd edu.xaostech.io
+npm install
+```
+
+### Local Development
+
+```bash
+npm run dev
+# Opens at http://localhost:8787
+```
+
+### Deploy
+
+```bash
+npm run deploy
+# Or for staging:
+wrangler deploy --env staging
+```
+
+### Create KV Namespaces
+
+```bash
+wrangler kv:namespace create EXERCISES_KV
+wrangler kv:namespace create PROGRESS_KV
+```
+
+### Create D1 Database
+
+```bash
+wrangler d1 create edu-xaostech-db
+wrangler d1 migrations apply edu-xaostech-db
+```
+
+---
+
+## 🔗 Integration with lingua.xaostech.io
+
+The platform integrates with lingua.xaostech.io for:
+
+- **Educational Translation** - `POST /translate/educational`
+- **Etymology Lookup** - `POST /etymology`
+- **Verb Conjugation** - `POST /conjugate`
+- **Linguistic Analysis** - `POST /analyze`
+
+---
+
+## 📊 Exercise Format (Universal Structure)
+
+```typescript
+interface Exercise {
+  id: string;
+  subject: Subject;
+  category: SubjectCategory;
+  difficulty: DifficultyLevel;
+  type: ExerciseType;
+  topic: string;
+  problem: {
+    instruction: string;
+    content: ProblemContent;
+    maxPoints: number;
+  };
+  solution: {
+    correctAnswer: SolutionAnswer;
+    explanation: string;
+    steps?: SolutionStep[];
+  };
+  hints: string[];
+  validation: ValidationRules;
+  metadata: ExerciseMetadata;
+}
+```
+
+---
+
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE)bash
 # Clone the repository
 git clone https://github.com/XAOSTECH/edu.xaostech.io.git
 cd edu.xaostech.io
