@@ -29,7 +29,13 @@ import {
   updateTimeTracking,
   contentContainsBlockedTopics,
   getBlockedTopicsForLevel,
+  checkTimeLimit,
 } from './lib/parental-controls';
+import {
+  getChildLandingPage,
+  getTimeLimitPage,
+  getOutsideHoursPage,
+} from './lib/child-ui';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -84,7 +90,30 @@ app.use('/generate/*', async (c, next) => {
 // LANDING PAGE
 // =============================================================================
 
-app.get('/', (c) => {
+app.get('/', async (c) => {
+  // Check if user is a child account
+  const user = await getSessionWithControls(c);
+  
+  if (user?.isChild && user.controls) {
+    // Get time remaining for child
+    const { minutesRemaining } = await checkTimeLimit(c, user.id, user.controls);
+    
+    const subjectsJson = JSON.stringify(Object.values(SUBJECT_CONFIGS).map(s => ({
+      subject: s.subject,
+      name: s.name,
+      description: s.description,
+      categories: s.categories,
+    })));
+    
+    return c.html(getChildLandingPage({
+      username: user.username || 'Learner',
+      minutesRemaining,
+      dailyLimit: user.controls.daily_time_limit,
+      filterLevel: user.controls.content_filter_level,
+    }, subjectsJson));
+  }
+  
+  // Standard landing page for adults
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -375,6 +404,409 @@ app.get('/', (c) => {
   </script>
 </body>
 </html>`;
+  return c.html(html);
+});
+
+// =============================================================================
+// CHILD TIME REMAINING API
+// =============================================================================
+
+app.get('/api/time-remaining', async (c) => {
+  const user = await getSessionWithControls(c);
+  
+  if (!user?.isChild || !user.controls) {
+    return c.json({ minutesRemaining: -1, unlimited: true });
+  }
+  
+  const { allowed, minutesRemaining } = await checkTimeLimit(c, user.id, user.controls);
+  
+  return c.json({
+    minutesRemaining,
+    dailyLimit: user.controls.daily_time_limit,
+    allowed,
+    unlimited: !user.controls.daily_time_limit,
+  });
+});
+
+// =============================================================================
+// CHILD LEARNING PAGES
+// =============================================================================
+
+app.get('/learn/:subject', async (c) => {
+  const subject = c.req.param('subject') as Subject;
+  const config = SUBJECT_CONFIGS[subject];
+  
+  if (!config) {
+    return c.json({ error: 'Subject not found' }, 404);
+  }
+  
+  const user = await getSessionWithControls(c);
+  const isChild = user?.isChild && user.controls;
+  
+  // Get time remaining for display
+  let minutesRemaining = -1;
+  let dailyLimit = null;
+  if (isChild && user.controls) {
+    const timeCheck = await checkTimeLimit(c, user.id, user.controls);
+    minutesRemaining = timeCheck.minutesRemaining;
+    dailyLimit = user.controls.daily_time_limit;
+  }
+  
+  const subjectEmojis: Record<string, string> = {
+    'language': '📚',
+    'mathematics': '🔢',
+    'physics': '⚡',
+    'chemistry': '🧪',
+    'biology': '🧬',
+    'history': '🏛️',
+    'geography': '🌍',
+    'computer-science': '💻',
+  };
+  
+  const emoji = subjectEmojis[subject] || '📖';
+  
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${emoji} ${config.name} - XAOSTECH EDU</title>
+  <link rel="icon" type="image/png" href="https://api.xaostech.io/data/assets/XAOSTECH_LOGO.png">
+  <style>
+    :root {
+      --primary: #f6821f;
+      --secondary: #3b82f6;
+      --bg: #0a0a0a;
+      --card: #1a1a1a;
+      --text: #e0e0e0;
+      --muted: #888;
+      --kid-primary: #FF6B6B;
+      --kid-secondary: #4ECDC4;
+      --kid-accent: #FFE66D;
+      --kid-purple: #A78BFA;
+      --kid-green: #34D399;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    ${isChild ? `
+    .time-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(90deg, var(--kid-purple), var(--kid-secondary));
+      color: white;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      font-weight: 600;
+    }
+    .time-banner .time-left {
+      background: rgba(0,0,0,0.2);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+    }
+    ` : ''}
+    .container { max-width: 900px; margin: 0 auto; padding: ${isChild ? '5rem' : '2rem'} 2rem 2rem; }
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .header .emoji { font-size: 4rem; }
+    .header h1 { color: var(--primary); margin: 1rem 0 0.5rem; }
+    .header p { opacity: 0.8; }
+    .back-link {
+      display: inline-block;
+      color: var(--primary);
+      text-decoration: none;
+      margin-bottom: 2rem;
+    }
+    .categories {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .category-btn {
+      background: var(--card);
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text);
+    }
+    .category-btn:hover, .category-btn.active {
+      border-color: var(--primary);
+      background: rgba(246,130,31,0.1);
+    }
+    .difficulty-select {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .diff-btn {
+      padding: 0.5rem 1rem;
+      border: 2px solid #333;
+      border-radius: 20px;
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .diff-btn:hover, .diff-btn.active {
+      border-color: var(--kid-green);
+      background: rgba(52,211,153,0.1);
+    }
+    .generate-section {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+    }
+    .btn {
+      background: ${isChild ? 'linear-gradient(135deg, var(--kid-primary), var(--kid-purple))' : 'var(--primary)'};
+      color: ${isChild ? 'white' : '#000'};
+      padding: 1rem 2.5rem;
+      border: none;
+      border-radius: ${isChild ? '25px' : '8px'};
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+    }
+    .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .exercise-container {
+      margin-top: 2rem;
+      display: none;
+    }
+    .exercise-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 2rem;
+      border: 2px solid #333;
+    }
+    .exercise-card.correct {
+      border-color: var(--kid-green);
+      background: rgba(52,211,153,0.05);
+    }
+    .exercise-card.incorrect {
+      border-color: var(--kid-primary);
+      background: rgba(255,107,107,0.05);
+    }
+    .question { font-size: 1.2rem; margin-bottom: 1.5rem; }
+    .options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .option {
+      padding: 1rem;
+      background: var(--bg);
+      border: 2px solid #333;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .option:hover { border-color: var(--primary); }
+    .option.selected { border-color: var(--secondary); background: rgba(59,130,246,0.1); }
+    .option.correct { border-color: var(--kid-green); background: rgba(52,211,153,0.2); }
+    .option.wrong { border-color: var(--kid-primary); background: rgba(255,107,107,0.2); }
+    .feedback {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 10px;
+      display: none;
+    }
+    .feedback.success {
+      background: rgba(52,211,153,0.1);
+      border: 1px solid var(--kid-green);
+      color: var(--kid-green);
+    }
+    .feedback.error {
+      background: rgba(255,107,107,0.1);
+      border: 1px solid var(--kid-primary);
+      color: var(--kid-primary);
+    }
+    footer { text-align: center; padding: 2rem; color: var(--muted); }
+    footer a { color: var(--primary); }
+  </style>
+</head>
+<body>
+  ${isChild && dailyLimit ? `
+  <div class="time-banner">
+    <span>👋 Learning ${config.name}!</span>
+    <div class="time-left">
+      🕐 ${minutesRemaining > 0 ? (Math.floor(minutesRemaining / 60) > 0 ? Math.floor(minutesRemaining / 60) + 'h ' : '') + (minutesRemaining % 60) + 'm left' : 'Unlimited'}
+    </div>
+  </div>
+  ` : ''}
+  
+  <div class="container">
+    <a href="/" class="back-link">← Back to subjects</a>
+    
+    <div class="header">
+      <div class="emoji">${emoji}</div>
+      <h1>${config.name}</h1>
+      <p>${config.description}</p>
+    </div>
+    
+    <h3 style="text-align: center; margin-bottom: 1rem;">Choose a topic:</h3>
+    <div class="categories" id="categories">
+      ${config.categories.map(cat => `<div class="category-btn" data-cat="${cat}">${cat}</div>`).join('')}
+    </div>
+    
+    <h3 style="text-align: center; margin-bottom: 1rem;">Difficulty:</h3>
+    <div class="difficulty-select">
+      ${['beginner', 'elementary', 'intermediate', 'advanced', 'expert'].map(d => 
+        `<button class="diff-btn ${d === 'intermediate' ? 'active' : ''}" data-diff="${d}">${d}</button>`
+      ).join('')}
+    </div>
+    
+    <div class="generate-section">
+      <button class="btn" id="generateBtn">🎯 Generate Exercise</button>
+    </div>
+    
+    <div class="exercise-container" id="exerciseContainer">
+      <div class="exercise-card" id="exerciseCard">
+        <div class="question" id="question"></div>
+        <div class="options" id="options"></div>
+        <div class="feedback" id="feedback"></div>
+        <button class="btn" id="nextBtn" style="margin-top: 1.5rem; display: none;">Next Exercise →</button>
+      </div>
+    </div>
+  </div>
+  
+  <footer>
+    <a href="https://xaostech.io">XAOSTECH</a> | Made with 💜
+  </footer>
+  
+  <script>
+    let selectedCategory = null;
+    let selectedDifficulty = 'intermediate';
+    let currentExercise = null;
+    
+    document.querySelectorAll('.category-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedCategory = btn.dataset.cat;
+      });
+    });
+    
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedDifficulty = btn.dataset.diff;
+      });
+    });
+    
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+      if (!selectedCategory) {
+        alert('Please select a topic first!');
+        return;
+      }
+      
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Creating...';
+      
+      try {
+        const res = await fetch('/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subject: '${subject}',
+            topic: selectedCategory,
+            difficulty: selectedDifficulty,
+            types: ['multiple-choice'],
+            count: 1,
+          }),
+        });
+        
+        const data = await res.json();
+        
+        if (data.exercises && data.exercises.length > 0) {
+          currentExercise = data.exercises[0];
+          renderExercise(currentExercise);
+          document.getElementById('exerciseContainer').style.display = 'block';
+        } else {
+          alert('Could not generate exercise. Please try again!');
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🎯 Generate Exercise';
+      }
+    });
+    
+    function renderExercise(exercise) {
+      const card = document.getElementById('exerciseCard');
+      card.className = 'exercise-card';
+      
+      document.getElementById('question').textContent = exercise.problem.content.question;
+      
+      const optionsDiv = document.getElementById('options');
+      optionsDiv.innerHTML = '';
+      
+      exercise.problem.content.options.forEach(opt => {
+        const optEl = document.createElement('div');
+        optEl.className = 'option';
+        optEl.textContent = opt.id.toUpperCase() + '. ' + opt.text;
+        optEl.dataset.id = opt.id;
+        optEl.addEventListener('click', () => selectOption(optEl, exercise));
+        optionsDiv.appendChild(optEl);
+      });
+      
+      document.getElementById('feedback').style.display = 'none';
+      document.getElementById('nextBtn').style.display = 'none';
+    }
+    
+    function selectOption(optEl, exercise) {
+      if (optEl.classList.contains('correct') || optEl.classList.contains('wrong')) return;
+      
+      document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+      optEl.classList.add('selected');
+      
+      const correct = exercise.solution.correctAnswer;
+      const selected = optEl.dataset.id;
+      const feedback = document.getElementById('feedback');
+      const card = document.getElementById('exerciseCard');
+      
+      if (selected === correct) {
+        optEl.classList.add('correct');
+        card.classList.add('correct');
+        feedback.className = 'feedback success';
+        feedback.innerHTML = '🎉 <strong>Correct!</strong> ' + (exercise.solution.explanation || 'Great job!');
+      } else {
+        optEl.classList.add('wrong');
+        card.classList.add('incorrect');
+        document.querySelector(\`.option[data-id="\${correct}"]\`).classList.add('correct');
+        feedback.className = 'feedback error';
+        feedback.innerHTML = '💡 <strong>Not quite!</strong> ' + (exercise.solution.explanation || 'Keep trying!');
+      }
+      
+      feedback.style.display = 'block';
+      document.getElementById('nextBtn').style.display = 'inline-block';
+    }
+    
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      document.getElementById('generateBtn').click();
+    });
+  </script>
+</body>
+</html>`;
+
   return c.html(html);
 });
 
