@@ -49,9 +49,11 @@ export interface Env {
     // KV Namespaces
     EXERCISES_KV: KVNamespace;
     PROGRESS_KV: KVNamespace;
+    SESSIONS_KV: KVNamespace;  // For parental controls session auth
 
-    // D1 Database
+    // D1 Databases
     EDU_DB: D1Database;
+    ACCOUNT_DB: D1Database;  // For parental controls
 
     // Environment Variables
     ENVIRONMENT: string;
