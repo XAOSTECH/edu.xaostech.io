@@ -31,6 +31,40 @@ interface SessionUser {
 }
 
 /**
+ * Send parent notification via account service
+ */
+export async function sendParentNotification(
+    accountDb: any,
+    parentId: string,
+    childId: string,
+    type: 'login' | 'time_limit' | 'content_flag' | 'approval_request',
+    title: string,
+    message: string,
+    data?: Record<string, unknown>
+): Promise<void> {
+    if (!accountDb) return;
+
+    try {
+        await accountDb.prepare(`
+            INSERT INTO parent_notifications (
+                parent_id, child_id, notification_type, title, message, data,
+                status, delivery_method, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, 'pending', 'email', datetime('now'))
+        `).bind(
+            parentId,
+            childId,
+            type,
+            title,
+            message,
+            data ? JSON.stringify(data) : null
+        ).run();
+    } catch {
+        // Silently fail notification - don't break user flow
+    }
+}
+
+/**
  * Get user from session and check if child account with controls
  */
 export async function getSessionWithControls(c: Context): Promise<SessionUser | null> {
@@ -252,6 +286,19 @@ export function parentalControlsMiddleware() {
         // Check time limit
         const { allowed, minutesRemaining } = await checkTimeLimit(c, user.id, user.controls);
         if (!allowed) {
+            // Send notification to parent
+            if (user.parentId) {
+                await sendParentNotification(
+                    c.env.ACCOUNT_DB,
+                    user.parentId,
+                    user.id,
+                    'time_limit',
+                    'Daily time limit reached',
+                    `Your child has used all ${user.controls.daily_time_limit} minutes of their daily learning time. Great job today!`,
+                    { minutesUsed: user.controls.daily_time_limit, timeLimit: user.controls.daily_time_limit }
+                );
+            }
+            
             return c.json({
                 error: 'Time limit reached',
                 message: 'You\'ve reached your daily learning limit. Great job today! Come back tomorrow.',
@@ -273,6 +320,34 @@ export function parentalControlsMiddleware() {
 
         return next();
     };
+}
+
+/**
+ * Notify parent when content is flagged
+ */
+export async function notifyContentFlagged(
+    c: Context,
+    user: SessionUser,
+    contentTitle: string,
+    flaggedTopics: string[]
+): Promise<void> {
+    if (!user.isChild || !user.parentId) return;
+    
+    await sendParentNotification(
+        c.env.ACCOUNT_DB,
+        user.parentId,
+        user.id,
+        'content_flag',
+        'Content flagged for review',
+        `Your child attempted to access content that was flagged: ${contentTitle}. Blocked topics: ${flaggedTopics.join(', ')}`,
+        { contentTitle, flaggedTopics }
+    );
+
+    // Also log as flagged activity
+    await logChildActivity(c, user.id, 'content_flag', {
+        contentTitle,
+        flaggedTopics,
+    }, true);
 }
 
 /**
