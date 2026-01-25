@@ -324,6 +324,37 @@ function generateFallbackExercise(
 // Import for fallback type
 type MultipleChoiceContent = import('../types/exercise').MultipleChoiceContent;
 
+// Import static exercise bank
+import { getStaticFallbackExercise, templateToExercise } from './exercise-bank';
+
+/**
+ * Generate a better fallback exercise using static bank
+ */
+function generateSmartFallback(
+    request: GenerateExerciseRequest,
+    subjectConfig: typeof SUBJECT_CONFIGS[Subject]
+): Exercise {
+    // Try to get a real exercise from static bank
+    const staticExercise = getStaticFallbackExercise(
+        request.subject,
+        request.category,
+        request.topic,
+        request.difficulty
+    );
+
+    if (staticExercise) {
+        return templateToExercise(
+            staticExercise,
+            request.subject,
+            (request.category || subjectConfig.categories[0]) as SubjectCategory,
+            request.topic
+        );
+    }
+
+    // If no static exercise found, use the generic fallback
+    return generateFallbackExercise(request, subjectConfig);
+}
+
 /**
  * Main exercise generation function
  */
@@ -446,10 +477,10 @@ export async function generateExercise(
             }
         }
 
-        // If no AI models worked, use fallback exercise
+        // If no AI models worked, use smart fallback with static exercise bank
         if (!generated) {
-            console.warn(`[GENERATOR] All models failed for exercise ${i + 1}, using fallback`);
-            const fallbackExercise = generateFallbackExercise(request, subjectConfig);
+            console.warn(`[GENERATOR] All models failed for exercise ${i + 1}, using smart fallback`);
+            const fallbackExercise = generateSmartFallback(request, subjectConfig);
             exercises.push(fallbackExercise);
         }
     }
