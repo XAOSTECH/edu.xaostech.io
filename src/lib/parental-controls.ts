@@ -298,7 +298,7 @@ export function parentalControlsMiddleware() {
                     { minutesUsed: user.controls.daily_time_limit, timeLimit: user.controls.daily_time_limit }
                 );
             }
-            
+
             return c.json({
                 error: 'Time limit reached',
                 message: 'You\'ve reached your daily learning limit. Great job today! Come back tomorrow.',
@@ -332,7 +332,7 @@ export async function notifyContentFlagged(
     flaggedTopics: string[]
 ): Promise<void> {
     if (!user.isChild || !user.parentId) return;
-    
+
     await sendParentNotification(
         c.env.ACCOUNT_DB,
         user.parentId,

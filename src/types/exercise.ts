@@ -447,7 +447,7 @@ export function determineContentRating(
         'colors', 'shapes', 'animals', 'plants', 'weather',
         'geography basics', 'maps', 'continents',
     ];
-    
+
     // Topics appropriate for 8+
     const age8Plus = [
         'fractions', 'decimals', 'percentages',
@@ -456,7 +456,7 @@ export function determineContentRating(
         'ancient civilizations', 'medieval history',
         'programming basics', 'algorithms',
     ];
-    
+
     // Topics for 12+
     const age12Plus = [
         'algebra', 'calculus basics', 'statistics',
@@ -466,7 +466,7 @@ export function determineContentRating(
         'world wars', 'modern history', 'politics',
         'advanced programming', 'data structures',
     ];
-    
+
     // Topics for 16+
     const age16Plus = [
         'advanced calculus', 'differential equations',
@@ -475,10 +475,10 @@ export function determineContentRating(
         'controversial history', 'genocide', 'terrorism',
         'philosophy', 'ethics',
     ];
-    
+
     const lowerTopic = topic.toLowerCase();
     const lowerCategory = category.toLowerCase();
-    
+
     // Check from most restrictive to least
     for (const t of age16Plus) {
         if (lowerTopic.includes(t) || lowerCategory.includes(t)) return 'age-16-plus';
@@ -489,7 +489,7 @@ export function determineContentRating(
     for (const t of age8Plus) {
         if (lowerTopic.includes(t) || lowerCategory.includes(t)) return 'age-8-plus';
     }
-    
+
     // Default based on subject complexity
     switch (subject) {
         case 'language':

@@ -359,7 +359,7 @@ export function getStaticFallbackExercise(
     difficulty: DifficultyLevel
 ): FallbackExerciseTemplate | null {
     const subjectExercises = exercisesBySubject[subject] || [];
-    
+
     if (subjectExercises.length === 0) {
         return null;
     }
@@ -369,7 +369,7 @@ export function getStaticFallbackExercise(
 
     // Filter by topic if possible
     if (topic) {
-        const topicMatches = candidates.filter(e => 
+        const topicMatches = candidates.filter(e =>
             e.topic.toLowerCase().includes(topic.toLowerCase()) ||
             e.tags.some(t => t.toLowerCase().includes(topic.toLowerCase()))
         );
