@@ -14,21 +14,21 @@ import { timing } from 'hono/timing';
 import { secureHeaders } from 'hono/secure-headers';
 
 import type {
-    Env,
-    GenerateExerciseRequest,
-    SubmissionRequest,
-    Subject,
-    DifficultyLevel,
+  Env,
+  GenerateExerciseRequest,
+  SubmissionRequest,
+  Subject,
+  DifficultyLevel,
 } from './types/exercise';
 import { SUBJECT_CONFIGS } from './types/exercise';
 import { generateExercise, validateAnswer } from './lib/generator';
 import {
-    parentalControlsMiddleware,
-    getSessionWithControls,
-    logChildActivity,
-    updateTimeTracking,
-    contentContainsBlockedTopics,
-    getBlockedTopicsForLevel,
+  parentalControlsMiddleware,
+  getSessionWithControls,
+  logChildActivity,
+  updateTimeTracking,
+  contentContainsBlockedTopics,
+  getBlockedTopicsForLevel,
 } from './lib/parental-controls';
 
 const app = new Hono<{ Bindings: Env }>();
@@ -41,16 +41,16 @@ app.use('*', logger());
 app.use('*', timing());
 app.use('*', secureHeaders());
 app.use('*', cors({
-    origin: [
-        'https://edu.xaostech.io',
-        'https://xaostech.io',
-        'http://localhost:3000',
-        'http://localhost:8787',
-    ],
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
-    exposeHeaders: ['X-Request-ID', 'X-Response-Time', 'X-Minutes-Remaining'],
-    maxAge: 86400,
+  origin: [
+    'https://edu.xaostech.io',
+    'https://xaostech.io',
+    'http://localhost:3000',
+    'http://localhost:8787',
+  ],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+  exposeHeaders: ['X-Request-ID', 'X-Response-Time', 'X-Minutes-Remaining'],
+  maxAge: 86400,
 }));
 
 // Parental controls middleware (checks time limits, allowed hours for child accounts)
@@ -60,24 +60,24 @@ app.use('*', parentalControlsMiddleware());
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 app.use('/generate/*', async (c, next) => {
-    const ip = c.req.header('CF-Connecting-IP') || 'unknown';
-    const now = Date.now();
-    const limit = parseInt(c.env.RATE_LIMIT_PER_MINUTE) || 30;
+  const ip = c.req.header('CF-Connecting-IP') || 'unknown';
+  const now = Date.now();
+  const limit = parseInt(c.env.RATE_LIMIT_PER_MINUTE) || 30;
 
-    const entry = rateLimitMap.get(ip);
-    if (entry && entry.resetAt > now) {
-        if (entry.count >= limit) {
-            return c.json({
-                error: 'Rate limit exceeded',
-                retryAfter: Math.ceil((entry.resetAt - now) / 1000),
-            }, 429);
-        }
-        entry.count++;
-    } else {
-        rateLimitMap.set(ip, { count: 1, resetAt: now + 60000 });
+  const entry = rateLimitMap.get(ip);
+  if (entry && entry.resetAt > now) {
+    if (entry.count >= limit) {
+      return c.json({
+        error: 'Rate limit exceeded',
+        retryAfter: Math.ceil((entry.resetAt - now) / 1000),
+      }, 429);
     }
+    entry.count++;
+  } else {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + 60000 });
+  }
 
-    await next();
+  await next();
 });
 
 // =============================================================================
@@ -85,7 +85,7 @@ app.use('/generate/*', async (c, next) => {
 // =============================================================================
 
 app.get('/', (c) => {
-    const html = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -319,11 +319,11 @@ app.get('/', (c) => {
 
   <script>
     const subjects = ${JSON.stringify(Object.values(SUBJECT_CONFIGS).map(s => ({
-        subject: s.subject,
-        name: s.name,
-        description: s.description,
-        categories: s.categories,
-    })))};
+    subject: s.subject,
+    name: s.name,
+    description: s.description,
+    categories: s.categories,
+  })))};
 
     const subjectsContainer = document.getElementById('subjects');
     subjects.forEach(s => {
@@ -375,7 +375,7 @@ app.get('/', (c) => {
   </script>
 </body>
 </html>`;
-    return c.html(html);
+  return c.html(html);
 });
 
 // =============================================================================
@@ -383,12 +383,12 @@ app.get('/', (c) => {
 // =============================================================================
 
 app.get('/health', (c) => {
-    return c.json({
-        status: 'ok',
-        service: 'edu.xaostech.io',
-        environment: c.env.ENVIRONMENT,
-        timestamp: new Date().toISOString(),
-    });
+  return c.json({
+    status: 'ok',
+    service: 'edu.xaostech.io',
+    environment: c.env.ENVIRONMENT,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // =============================================================================
@@ -396,39 +396,39 @@ app.get('/health', (c) => {
 // =============================================================================
 
 app.get('/subjects', (c) => {
-    const subjects = Object.values(SUBJECT_CONFIGS).map(config => ({
-        subject: config.subject,
-        name: config.name,
-        description: config.description,
-        categories: config.categories,
-        supportedTypes: config.supportedTypes,
-        defaultDifficulty: config.defaultDifficulty,
-    }));
+  const subjects = Object.values(SUBJECT_CONFIGS).map(config => ({
+    subject: config.subject,
+    name: config.name,
+    description: config.description,
+    categories: config.categories,
+    supportedTypes: config.supportedTypes,
+    defaultDifficulty: config.defaultDifficulty,
+  }));
 
-    return c.json({
-        subjects,
-        difficulties: ['beginner', 'elementary', 'intermediate', 'advanced', 'expert'],
-        count: subjects.length,
-    });
+  return c.json({
+    subjects,
+    difficulties: ['beginner', 'elementary', 'intermediate', 'advanced', 'expert'],
+    count: subjects.length,
+  });
 });
 
 app.get('/subjects/:subject', (c) => {
-    const subject = c.req.param('subject') as Subject;
-    const config = SUBJECT_CONFIGS[subject];
+  const subject = c.req.param('subject') as Subject;
+  const config = SUBJECT_CONFIGS[subject];
 
-    if (!config) {
-        return c.json({ error: 'Subject not found' }, 404);
-    }
+  if (!config) {
+    return c.json({ error: 'Subject not found' }, 404);
+  }
 
-    return c.json({
-        subject: config.subject,
-        name: config.name,
-        description: config.description,
-        categories: config.categories,
-        supportedTypes: config.supportedTypes,
-        defaultDifficulty: config.defaultDifficulty,
-        validationDefaults: config.validationDefaults,
-    });
+  return c.json({
+    subject: config.subject,
+    name: config.name,
+    description: config.description,
+    categories: config.categories,
+    supportedTypes: config.supportedTypes,
+    defaultDifficulty: config.defaultDifficulty,
+    validationDefaults: config.validationDefaults,
+  });
 });
 
 // =============================================================================
@@ -436,98 +436,98 @@ app.get('/subjects/:subject', (c) => {
 // =============================================================================
 
 app.post('/generate', async (c) => {
-    try {
-        const body = await c.req.json<GenerateExerciseRequest>();
+  try {
+    const body = await c.req.json<GenerateExerciseRequest>();
 
-        // Validate required fields
-        if (!body.subject || !body.topic) {
-            return c.json({ error: 'subject and topic are required' }, 400);
-        }
-
-        // Validate subject
-        if (!SUBJECT_CONFIGS[body.subject]) {
-            return c.json({
-                error: `Invalid subject. Supported: ${Object.keys(SUBJECT_CONFIGS).join(', ')}`
-            }, 400);
-        }
-
-        // Set defaults
-        const request: GenerateExerciseRequest = {
-            ...body,
-            difficulty: body.difficulty || 'intermediate',
-            count: body.count || 1,
-            options: {
-                includeHints: true,
-                hintCount: 3,
-                includeCommonMistakes: true,
-                ...body.options,
-            },
-        };
-
-        const response = await generateExercise(c.env, request);
-
-        return c.json(response, 200, {
-            'X-Exercises-Count': response.exercises.length.toString(),
-            'X-Model-Used': response.meta.model,
-            'X-Cached': response.meta.cached ? 'true' : 'false',
-        });
-    } catch (error: any) {
-        console.error('[GENERATE] Error:', error);
-        return c.json({
-            error: 'Exercise generation failed',
-            message: error.message,
-        }, 500);
+    // Validate required fields
+    if (!body.subject || !body.topic) {
+      return c.json({ error: 'subject and topic are required' }, 400);
     }
+
+    // Validate subject
+    if (!SUBJECT_CONFIGS[body.subject]) {
+      return c.json({
+        error: `Invalid subject. Supported: ${Object.keys(SUBJECT_CONFIGS).join(', ')}`
+      }, 400);
+    }
+
+    // Set defaults
+    const request: GenerateExerciseRequest = {
+      ...body,
+      difficulty: body.difficulty || 'intermediate',
+      count: body.count || 1,
+      options: {
+        includeHints: true,
+        hintCount: 3,
+        includeCommonMistakes: true,
+        ...body.options,
+      },
+    };
+
+    const response = await generateExercise(c.env, request);
+
+    return c.json(response, 200, {
+      'X-Exercises-Count': response.exercises.length.toString(),
+      'X-Model-Used': response.meta.model,
+      'X-Cached': response.meta.cached ? 'true' : 'false',
+    });
+  } catch (error: any) {
+    console.error('[GENERATE] Error:', error);
+    return c.json({
+      error: 'Exercise generation failed',
+      message: error.message,
+    }, 500);
+  }
 });
 
 // Language-specific shortcut
 app.post('/generate/language', async (c) => {
-    try {
-        const body = await c.req.json();
+  try {
+    const body = await c.req.json();
 
-        const request: GenerateExerciseRequest = {
-            subject: 'language',
-            topic: body.topic || 'general vocabulary',
-            difficulty: body.difficulty || 'intermediate',
-            category: body.category,
-            types: body.types || ['multiple-choice', 'fill-blank', 'translation'],
-            language: body.language || 'en',
-            targetLanguage: body.targetLanguage,
-            count: body.count || 1,
-            lessonContext: body.lessonContext,
-            options: body.options,
-        };
+    const request: GenerateExerciseRequest = {
+      subject: 'language',
+      topic: body.topic || 'general vocabulary',
+      difficulty: body.difficulty || 'intermediate',
+      category: body.category,
+      types: body.types || ['multiple-choice', 'fill-blank', 'translation'],
+      language: body.language || 'en',
+      targetLanguage: body.targetLanguage,
+      count: body.count || 1,
+      lessonContext: body.lessonContext,
+      options: body.options,
+    };
 
-        const response = await generateExercise(c.env, request);
-        return c.json(response);
-    } catch (error: any) {
-        console.error('[GENERATE/LANGUAGE] Error:', error);
-        return c.json({ error: 'Language exercise generation failed', message: error.message }, 500);
-    }
+    const response = await generateExercise(c.env, request);
+    return c.json(response);
+  } catch (error: any) {
+    console.error('[GENERATE/LANGUAGE] Error:', error);
+    return c.json({ error: 'Language exercise generation failed', message: error.message }, 500);
+  }
 });
 
 // Math-specific shortcut
 app.post('/generate/mathematics', async (c) => {
-    try {
-        const body = await c.req.json();
+  try {
+    const body = await c.req.json();
 
-        const request: GenerateExerciseRequest = {
-            subject: 'mathematics',
-            topic: body.topic || 'basic algebra',
-            difficulty: body.difficulty || 'intermediate',
-            category: body.category,
-            types: body.types || ['calculation', 'multiple-choice', 'proof'],
-            count: body.count || 1,
-            lessonContext: body.lessonContext,
-            options: body.options,
-        };
+    const request: GenerateExerciseRequest = {
+      subject: 'mathematics',
+      topic: body.topic || 'basic algebra',
+      difficulty: body.difficulty || 'intermediate',
+      category: body.category,
+      types: body.types || ['calculation', 'multiple-choice', 'proof'],
+      count: body.count || 1,
+      lessonContext: body.lessonContext,
+      options: body.options,
+    };
 
-        const response = await generateExercise(c.env, request);
-        return c.json(response);
-    } catch (error: any) {
-        console.error('[GENERATE/MATH] Error:', error);
-        return c.json({ error: 'Mathematics exercise generation failed', message: error.message }, 500);
-    }
+    const response = await generateExercise(c.env, request);
+    return c.json(response);
+  } catch (error: any) {
+    console.error('[GENERATE/MATH] Error:', error);
+    return c.json({ error: 'Mathematics exercise generation failed', message: error.message }, 500);
+  }
 });
 
 // =============================================================================
@@ -535,47 +535,47 @@ app.post('/generate/mathematics', async (c) => {
 // =============================================================================
 
 app.post('/validate', async (c) => {
-    try {
-        const body = await c.req.json<SubmissionRequest>();
+  try {
+    const body = await c.req.json<SubmissionRequest>();
 
-        if (!body.exerciseId || body.answer === undefined) {
-            return c.json({ error: 'exerciseId and answer are required' }, 400);
-        }
-
-        // Retrieve exercise from cache
-        const exerciseData = await c.env.EXERCISES_KV.get(`exercise:${body.exerciseId}`);
-
-        if (!exerciseData) {
-            return c.json({ error: 'Exercise not found' }, 404);
-        }
-
-        const exercise = JSON.parse(exerciseData);
-        const result = validateAnswer(
-            exercise,
-            body.answer,
-            body.hintsUsed || 0,
-            body.timeTaken || 0
-        );
-
-        // Store submission in progress KV if user provided
-        if (body.userId) {
-            const progressKey = `progress:${body.userId}:${body.exerciseId}`;
-            await c.env.PROGRESS_KV.put(progressKey, JSON.stringify({
-                ...result,
-                submittedAt: new Date().toISOString(),
-                answer: body.answer,
-            }));
-        }
-
-        return c.json({
-            exerciseId: body.exerciseId,
-            ...result,
-            solution: result.passed || result.score < 30 ? exercise.solution : undefined,
-        });
-    } catch (error: any) {
-        console.error('[VALIDATE] Error:', error);
-        return c.json({ error: 'Validation failed', message: error.message }, 500);
+    if (!body.exerciseId || body.answer === undefined) {
+      return c.json({ error: 'exerciseId and answer are required' }, 400);
     }
+
+    // Retrieve exercise from cache
+    const exerciseData = await c.env.EXERCISES_KV.get(`exercise:${body.exerciseId}`);
+
+    if (!exerciseData) {
+      return c.json({ error: 'Exercise not found' }, 404);
+    }
+
+    const exercise = JSON.parse(exerciseData);
+    const result = validateAnswer(
+      exercise,
+      body.answer,
+      body.hintsUsed || 0,
+      body.timeTaken || 0
+    );
+
+    // Store submission in progress KV if user provided
+    if (body.userId) {
+      const progressKey = `progress:${body.userId}:${body.exerciseId}`;
+      await c.env.PROGRESS_KV.put(progressKey, JSON.stringify({
+        ...result,
+        submittedAt: new Date().toISOString(),
+        answer: body.answer,
+      }));
+    }
+
+    return c.json({
+      exerciseId: body.exerciseId,
+      ...result,
+      solution: result.passed || result.score < 30 ? exercise.solution : undefined,
+    });
+  } catch (error: any) {
+    console.error('[VALIDATE] Error:', error);
+    return c.json({ error: 'Validation failed', message: error.message }, 500);
+  }
 });
 
 // =============================================================================
@@ -583,20 +583,20 @@ app.post('/validate', async (c) => {
 // =============================================================================
 
 app.get('/solution/:exerciseId', async (c) => {
-    const exerciseId = c.req.param('exerciseId');
-    const exerciseData = await c.env.EXERCISES_KV.get(`exercise:${exerciseId}`);
+  const exerciseId = c.req.param('exerciseId');
+  const exerciseData = await c.env.EXERCISES_KV.get(`exercise:${exerciseId}`);
 
-    if (!exerciseData) {
-        return c.json({ error: 'Exercise not found' }, 404);
-    }
+  if (!exerciseData) {
+    return c.json({ error: 'Exercise not found' }, 404);
+  }
 
-    const exercise = JSON.parse(exerciseData);
+  const exercise = JSON.parse(exerciseData);
 
-    return c.json({
-        exerciseId,
-        solution: exercise.solution,
-        problem: exercise.problem,
-    });
+  return c.json({
+    exerciseId,
+    solution: exercise.solution,
+    problem: exercise.problem,
+  });
 });
 
 // =============================================================================
@@ -604,25 +604,25 @@ app.get('/solution/:exerciseId', async (c) => {
 // =============================================================================
 
 app.get('/hints/:exerciseId', async (c) => {
-    const exerciseId = c.req.param('exerciseId');
-    const hintIndex = parseInt(c.req.query('index') || '0');
+  const exerciseId = c.req.param('exerciseId');
+  const hintIndex = parseInt(c.req.query('index') || '0');
 
-    const exerciseData = await c.env.EXERCISES_KV.get(`exercise:${exerciseId}`);
+  const exerciseData = await c.env.EXERCISES_KV.get(`exercise:${exerciseId}`);
 
-    if (!exerciseData) {
-        return c.json({ error: 'Exercise not found' }, 404);
-    }
+  if (!exerciseData) {
+    return c.json({ error: 'Exercise not found' }, 404);
+  }
 
-    const exercise = JSON.parse(exerciseData);
-    const availableHints = exercise.hints.slice(0, hintIndex + 1);
+  const exercise = JSON.parse(exerciseData);
+  const availableHints = exercise.hints.slice(0, hintIndex + 1);
 
-    return c.json({
-        exerciseId,
-        hints: availableHints,
-        hasMore: hintIndex + 1 < exercise.hints.length,
-        totalHints: exercise.hints.length,
-        penalty: exercise.validation.hintPenalty * availableHints.length,
-    });
+  return c.json({
+    exerciseId,
+    hints: availableHints,
+    hasMore: hintIndex + 1 < exercise.hints.length,
+    totalHints: exercise.hints.length,
+    penalty: exercise.validation.hintPenalty * availableHints.length,
+  });
 });
 
 // =============================================================================
@@ -630,32 +630,32 @@ app.get('/hints/:exerciseId', async (c) => {
 // =============================================================================
 
 app.post('/translate', async (c) => {
-    try {
-        const { text, to, from = 'auto', context } = await c.req.json();
+  try {
+    const { text, to, from = 'auto', context } = await c.req.json();
 
-        if (!text || !to) {
-            return c.json({ error: 'text and to language required' }, 400);
-        }
-
-        // Forward to lingua.xaostech.io
-        const linguaUrl = c.env.LINGUA_API_URL || 'https://lingua.xaostech.io';
-        const response = await fetch(`${linguaUrl}/translate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                text,
-                to,
-                from,
-                context: context || 'educational content'
-            }),
-        });
-
-        const result = await response.json();
-        return c.json(result);
-    } catch (error: any) {
-        console.error('[TRANSLATE] Error:', error);
-        return c.json({ error: 'Translation failed', message: error.message }, 500);
+    if (!text || !to) {
+      return c.json({ error: 'text and to language required' }, 400);
     }
+
+    // Forward to lingua.xaostech.io
+    const linguaUrl = c.env.LINGUA_API_URL || 'https://lingua.xaostech.io';
+    const response = await fetch(`${linguaUrl}/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        to,
+        from,
+        context: context || 'educational content'
+      }),
+    });
+
+    const result = await response.json();
+    return c.json(result);
+  } catch (error: any) {
+    console.error('[TRANSLATE] Error:', error);
+    return c.json({ error: 'Translation failed', message: error.message }, 500);
+  }
 });
 
 // =============================================================================
@@ -663,23 +663,23 @@ app.post('/translate', async (c) => {
 // =============================================================================
 
 app.notFound((c) => {
-    return c.json({
-        error: 'Not Found',
-        path: c.req.path,
-        availableEndpoints: [
-            'GET /',
-            'GET /health',
-            'GET /subjects',
-            'GET /subjects/:subject',
-            'POST /generate',
-            'POST /generate/language',
-            'POST /generate/mathematics',
-            'POST /validate',
-            'GET /solution/:exerciseId',
-            'GET /hints/:exerciseId',
-            'POST /translate',
-        ],
-    }, 404);
+  return c.json({
+    error: 'Not Found',
+    path: c.req.path,
+    availableEndpoints: [
+      'GET /',
+      'GET /health',
+      'GET /subjects',
+      'GET /subjects/:subject',
+      'POST /generate',
+      'POST /generate/language',
+      'POST /generate/mathematics',
+      'POST /validate',
+      'GET /solution/:exerciseId',
+      'GET /hints/:exerciseId',
+      'POST /translate',
+    ],
+  }, 404);
 });
 
 // =============================================================================
@@ -687,11 +687,11 @@ app.notFound((c) => {
 // =============================================================================
 
 app.onError((err, c) => {
-    console.error('[ERROR]', err);
-    return c.json({
-        error: 'Internal Server Error',
-        message: c.env.ENVIRONMENT === 'development' ? err.message : undefined,
-    }, 500);
+  console.error('[ERROR]', err);
+  return c.json({
+    error: 'Internal Server Error',
+    message: c.env.ENVIRONMENT === 'development' ? err.message : undefined,
+  }, 500);
 });
 
 export default app;
