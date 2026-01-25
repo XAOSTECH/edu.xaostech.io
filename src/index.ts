@@ -824,6 +824,37 @@ app.get('/health', (c) => {
 });
 
 // =============================================================================
+// EXERCISE BANK EXPORT (for backup/versioning)
+// =============================================================================
+
+import { exportExercisesToJSON } from './lib/d1-exercise-bank';
+
+app.get('/api/exercises/export', async (c) => {
+  // Only allow owner/admin to export
+  const user = await getSessionUser(c);
+  if (!user || (user.role !== 'owner' && user.role !== 'admin')) {
+    return c.json({ error: 'Unauthorized - admin access required' }, 401);
+  }
+
+  const subject = c.req.query('subject') as Subject | undefined;
+  
+  try {
+    const exportData = await exportExercisesToJSON(c.env.EDU_DB, subject);
+    
+    // Return as downloadable JSON
+    return new Response(JSON.stringify(exportData, null, 2), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Disposition': `attachment; filename="exercises-export-${new Date().toISOString().split('T')[0]}.json"`,
+      },
+    });
+  } catch (err: any) {
+    console.error('Export error:', err);
+    return c.json({ error: 'Export failed', message: err.message }, 500);
+  }
+});
+
+// =============================================================================
 // SUBJECTS ENDPOINT
 // =============================================================================
 

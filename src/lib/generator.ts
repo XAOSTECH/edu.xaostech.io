@@ -324,17 +324,67 @@ function generateFallbackExercise(
 // Import for fallback type
 type MultipleChoiceContent = import('../types/exercise').MultipleChoiceContent;
 
-// Import static exercise bank
+// Import static exercise bank (legacy fallback)
 import { getStaticFallbackExercise, templateToExercise } from './exercise-bank';
 
+// Import D1-based exercise bank
+import { getExerciseFromD1 } from './d1-exercise-bank';
+
 /**
- * Generate a better fallback exercise using static bank
+ * Generate a better fallback exercise using D1 first, then static bank
  */
+async function generateSmartFallbackAsync(
+    request: GenerateExerciseRequest,
+    subjectConfig: typeof SUBJECT_CONFIGS[Subject],
+    db?: D1Database
+): Promise<Exercise> {
+    // First, try to get from D1 database (if available)
+    if (db) {
+        try {
+            const d1Exercise = await getExerciseFromD1(
+                db,
+                request.subject,
+                request.category,
+                request.topic,
+                request.difficulty
+            );
+            if (d1Exercise) {
+                console.log('[GENERATOR] Using D1 exercise fallback');
+                return d1Exercise;
+            }
+        } catch (err) {
+            console.warn('[GENERATOR] D1 fallback failed, trying static bank:', err);
+        }
+    }
+
+    // Fall back to static bank
+    const staticExercise = getStaticFallbackExercise(
+        request.subject,
+        request.category,
+        request.topic,
+        request.difficulty
+    );
+
+    if (staticExercise) {
+        console.log('[GENERATOR] Using static exercise fallback');
+        return templateToExercise(
+            staticExercise,
+            request.subject,
+            (request.category || subjectConfig.categories[0]) as SubjectCategory,
+            request.topic
+        );
+    }
+
+    // If no static exercise found, use the generic fallback
+    return generateFallbackExercise(request, subjectConfig);
+}
+
+// Sync wrapper for backwards compatibility  
 function generateSmartFallback(
     request: GenerateExerciseRequest,
     subjectConfig: typeof SUBJECT_CONFIGS[Subject]
 ): Exercise {
-    // Try to get a real exercise from static bank
+    // Just use static bank in sync context
     const staticExercise = getStaticFallbackExercise(
         request.subject,
         request.category,
@@ -351,7 +401,6 @@ function generateSmartFallback(
         );
     }
 
-    // If no static exercise found, use the generic fallback
     return generateFallbackExercise(request, subjectConfig);
 }
 
@@ -477,11 +526,26 @@ export async function generateExercise(
             }
         }
 
-        // If no AI models worked, use smart fallback with static exercise bank
+        // If no AI models worked, use smart fallback (try D1 first, then static bank)
         if (!generated) {
             console.warn(`[GENERATOR] All models failed for exercise ${i + 1}, using smart fallback`);
-            const fallbackExercise = generateSmartFallback(request, subjectConfig);
-            exercises.push(fallbackExercise);
+            
+            // Try D1 database first
+            const d1Exercise = env.EDU_DB ? await getExerciseFromD1(
+                env.EDU_DB,
+                request.subject,
+                request.category,
+                request.topic,
+                request.difficulty
+            ) : null;
+            
+            if (d1Exercise) {
+                exercises.push(d1Exercise);
+            } else {
+                // Fall back to static exercise bank
+                const fallbackExercise = generateSmartFallback(request, subjectConfig);
+                exercises.push(fallbackExercise);
+            }
         }
     }
 
@@ -495,7 +559,7 @@ export async function generateExercise(
             model,
             generatedAt: new Date().toISOString(),
             cached: false,
-            ...(aiError && exercises.some(e => e.metadata.generatedBy === 'fallback')
+            ...(aiError && exercises.some(e => (e as any).metadata?.generatedBy === 'fallback' || (e as any).generatedBy === 'database')
                 ? { warning: 'Some exercises used fallback due to AI unavailability' }
                 : {}),
         },
