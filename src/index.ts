@@ -22,6 +22,14 @@ import type {
 } from './types/exercise';
 import { SUBJECT_CONFIGS } from './types/exercise';
 import { generateExercise, validateAnswer } from './lib/generator';
+import {
+    parentalControlsMiddleware,
+    getSessionWithControls,
+    logChildActivity,
+    updateTimeTracking,
+    contentContainsBlockedTopics,
+    getBlockedTopicsForLevel,
+} from './lib/parental-controls';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -41,9 +49,12 @@ app.use('*', cors({
     ],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
-    exposeHeaders: ['X-Request-ID', 'X-Response-Time'],
+    exposeHeaders: ['X-Request-ID', 'X-Response-Time', 'X-Minutes-Remaining'],
     maxAge: 86400,
 }));
+
+// Parental controls middleware (checks time limits, allowed hours for child accounts)
+app.use('*', parentalControlsMiddleware());
 
 // Rate limiting (simple in-memory for demo, use Durable Objects in production)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
