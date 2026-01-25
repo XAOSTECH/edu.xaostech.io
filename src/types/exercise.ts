@@ -387,6 +387,128 @@ export interface ValidationRules {
 }
 
 // =============================================================================
+// CONTENT RATING (Parental Controls)
+// =============================================================================
+
+/**
+ * Age-appropriate content ratings for parental controls
+ * Maps to content_filter_level in parental_controls table
+ */
+export type ContentRating = 'all-ages' | 'age-8-plus' | 'age-12-plus' | 'age-16-plus' | 'adult';
+
+/**
+ * Content flags for filtering
+ */
+export interface ContentFlags {
+    /** Contains violence references (history, biology) */
+    violence?: boolean;
+    /** Contains death/war topics */
+    death_war?: boolean;
+    /** Contains mature themes */
+    mature_themes?: boolean;
+    /** Contains complex/scary concepts */
+    scary_concepts?: boolean;
+    /** Contains religious content */
+    religious?: boolean;
+    /** Contains political content */
+    political?: boolean;
+}
+
+/**
+ * Map content rating to filter level
+ * strict = all-ages only
+ * moderate = all-ages + age-8-plus
+ * minimal = all-ages + age-8-plus + age-12-plus
+ */
+export function isContentAllowed(
+    rating: ContentRating,
+    filterLevel: 'strict' | 'moderate' | 'minimal'
+): boolean {
+    const allowedByLevel: Record<string, ContentRating[]> = {
+        strict: ['all-ages'],
+        moderate: ['all-ages', 'age-8-plus'],
+        minimal: ['all-ages', 'age-8-plus', 'age-12-plus'],
+    };
+    return allowedByLevel[filterLevel]?.includes(rating) ?? false;
+}
+
+/**
+ * Determine content rating from topic/category
+ */
+export function determineContentRating(
+    subject: Subject,
+    category: SubjectCategory,
+    topic: string
+): ContentRating {
+    // Topics that are always safe
+    const allAgesSafe = [
+        'arithmetic', 'basic algebra', 'geometry basics', 'counting',
+        'vocabulary', 'grammar', 'reading', 'spelling',
+        'colors', 'shapes', 'animals', 'plants', 'weather',
+        'geography basics', 'maps', 'continents',
+    ];
+    
+    // Topics appropriate for 8+
+    const age8Plus = [
+        'fractions', 'decimals', 'percentages',
+        'biology basics', 'ecosystems', 'food chains',
+        'simple chemistry', 'states of matter',
+        'ancient civilizations', 'medieval history',
+        'programming basics', 'algorithms',
+    ];
+    
+    // Topics for 12+
+    const age12Plus = [
+        'algebra', 'calculus basics', 'statistics',
+        'human biology', 'genetics', 'evolution',
+        'chemical reactions', 'periodic table',
+        'physics', 'mechanics', 'electricity',
+        'world wars', 'modern history', 'politics',
+        'advanced programming', 'data structures',
+    ];
+    
+    // Topics for 16+
+    const age16Plus = [
+        'advanced calculus', 'differential equations',
+        'organic chemistry', 'biochemistry',
+        'quantum physics', 'nuclear physics',
+        'controversial history', 'genocide', 'terrorism',
+        'philosophy', 'ethics',
+    ];
+    
+    const lowerTopic = topic.toLowerCase();
+    const lowerCategory = category.toLowerCase();
+    
+    // Check from most restrictive to least
+    for (const t of age16Plus) {
+        if (lowerTopic.includes(t) || lowerCategory.includes(t)) return 'age-16-plus';
+    }
+    for (const t of age12Plus) {
+        if (lowerTopic.includes(t) || lowerCategory.includes(t)) return 'age-12-plus';
+    }
+    for (const t of age8Plus) {
+        if (lowerTopic.includes(t) || lowerCategory.includes(t)) return 'age-8-plus';
+    }
+    
+    // Default based on subject complexity
+    switch (subject) {
+        case 'language':
+        case 'mathematics':
+        case 'geography':
+            return 'all-ages';
+        case 'biology':
+        case 'chemistry':
+        case 'physics':
+        case 'history':
+            return 'age-8-plus';
+        case 'computer-science':
+            return 'age-8-plus';
+        default:
+            return 'all-ages';
+    }
+}
+
+// =============================================================================
 // METADATA
 // =============================================================================
 
@@ -396,6 +518,12 @@ export interface ExerciseMetadata {
 
     /** AI model used for generation */
     generatedBy: string;
+
+    /** Content rating for parental controls */
+    contentRating: ContentRating;
+
+    /** Content flags for filtering */
+    contentFlags?: ContentFlags;
 
     /** Based on which lesson/section */
     sourceLesson?: string;

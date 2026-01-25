@@ -23,7 +23,9 @@ import type {
     ProblemContent,
     ExerciseSolution,
     ValidationRules,
+    ContentRating,
 } from '../types/exercise';
+import { determineContentRating } from '../types/exercise';
 
 // Re-export subject configs
 export { SUBJECT_CONFIGS } from '../types/exercise';
@@ -177,6 +179,11 @@ function parseAIResponse(
             metadata: {
                 createdAt: new Date().toISOString(),
                 generatedBy: model,
+                contentRating: determineContentRating(
+                    request.subject,
+                    (request.category || subjectConfig.categories[0]) as SubjectCategory,
+                    request.topic
+                ),
                 sourceLesson: request.lessonContext?.title,
                 tags: parsed.tags || [request.topic, request.subject],
                 estimatedTime: parsed.estimatedTime || getDefaultTime(request.difficulty),
@@ -186,9 +193,8 @@ function parseAIResponse(
         };
 
         return exercise;
-    } catch (error) {
-        console.error('[GENERATOR] Failed to parse AI response:', error);
-        console.error('[GENERATOR] Raw response:', response.substring(0, 500));
+    } catch {
+        // Failed to parse AI response
         return null;
     }
 }
@@ -302,6 +308,11 @@ function generateFallbackExercise(
         metadata: {
             createdAt: new Date().toISOString(),
             generatedBy: 'fallback',
+            contentRating: determineContentRating(
+                request.subject,
+                (request.category || subjectConfig.categories[0]) as SubjectCategory,
+                request.topic
+            ),
             tags: [request.topic, request.subject, 'fallback'],
             estimatedTime: getDefaultTime(request.difficulty),
             language: request.language || 'en',
