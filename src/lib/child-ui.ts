@@ -235,7 +235,7 @@ export function getSubjectEmoji(subject: string): string {
  */
 export function getTimeBanner(ctx: ChildUIContext): string {
     const { username, minutesRemaining, dailyLimit } = ctx;
-    
+
     if (!dailyLimit || minutesRemaining < 0) {
         return `
         <div class="time-banner">
@@ -249,13 +249,13 @@ export function getTimeBanner(ctx: ChildUIContext): string {
           </div>
         </div>`;
     }
-    
+
     const percentRemaining = Math.max(0, (minutesRemaining / dailyLimit) * 100);
     const isWarning = minutesRemaining <= 10;
     const hours = Math.floor(minutesRemaining / 60);
     const mins = minutesRemaining % 60;
     const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins} minutes`;
-    
+
     return `
     <div class="time-banner">
       <div class="greeting">

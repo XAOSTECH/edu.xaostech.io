@@ -93,18 +93,18 @@ app.use('/generate/*', async (c, next) => {
 app.get('/', async (c) => {
   // Check if user is a child account
   const user = await getSessionWithControls(c);
-  
+
   if (user?.isChild && user.controls) {
     // Get time remaining for child
     const { minutesRemaining } = await checkTimeLimit(c, user.id, user.controls);
-    
+
     const subjectsJson = JSON.stringify(Object.values(SUBJECT_CONFIGS).map(s => ({
       subject: s.subject,
       name: s.name,
       description: s.description,
       categories: s.categories,
     })));
-    
+
     return c.html(getChildLandingPage({
       username: user.username || 'Learner',
       minutesRemaining,
@@ -112,7 +112,7 @@ app.get('/', async (c) => {
       filterLevel: user.controls.content_filter_level,
     }, subjectsJson));
   }
-  
+
   // Standard landing page for adults
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -413,13 +413,13 @@ app.get('/', async (c) => {
 
 app.get('/api/time-remaining', async (c) => {
   const user = await getSessionWithControls(c);
-  
+
   if (!user?.isChild || !user.controls) {
     return c.json({ minutesRemaining: -1, unlimited: true });
   }
-  
+
   const { allowed, minutesRemaining } = await checkTimeLimit(c, user.id, user.controls);
-  
+
   return c.json({
     minutesRemaining,
     dailyLimit: user.controls.daily_time_limit,
@@ -435,14 +435,14 @@ app.get('/api/time-remaining', async (c) => {
 app.get('/learn/:subject', async (c) => {
   const subject = c.req.param('subject') as Subject;
   const config = SUBJECT_CONFIGS[subject];
-  
+
   if (!config) {
     return c.json({ error: 'Subject not found' }, 404);
   }
-  
+
   const user = await getSessionWithControls(c);
   const isChild = user?.isChild && user.controls;
-  
+
   // Get time remaining for display
   let minutesRemaining = -1;
   let dailyLimit = null;
@@ -451,7 +451,7 @@ app.get('/learn/:subject', async (c) => {
     minutesRemaining = timeCheck.minutesRemaining;
     dailyLimit = user.controls.daily_time_limit;
   }
-  
+
   const subjectEmojis: Record<string, string> = {
     'language': '📚',
     'mathematics': '🔢',
@@ -462,9 +462,9 @@ app.get('/learn/:subject', async (c) => {
     'geography': '🌍',
     'computer-science': '💻',
   };
-  
+
   const emoji = subjectEmojis[subject] || '📖';
-  
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -666,9 +666,9 @@ app.get('/learn/:subject', async (c) => {
     
     <h3 style="text-align: center; margin-bottom: 1rem;">Difficulty:</h3>
     <div class="difficulty-select">
-      ${['beginner', 'elementary', 'intermediate', 'advanced', 'expert'].map(d => 
-        `<button class="diff-btn ${d === 'intermediate' ? 'active' : ''}" data-diff="${d}">${d}</button>`
-      ).join('')}
+      ${['beginner', 'elementary', 'intermediate', 'advanced', 'expert'].map(d =>
+    `<button class="diff-btn ${d === 'intermediate' ? 'active' : ''}" data-diff="${d}">${d}</button>`
+  ).join('')}
     </div>
     
     <div class="generate-section">
