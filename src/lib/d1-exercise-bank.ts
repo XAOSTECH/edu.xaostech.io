@@ -78,7 +78,7 @@ export async function getExerciseFromD1(
         }
 
         const row = await stmt.first<ExerciseRow>();
-        
+
         if (!row) {
             // Try broader search without topic/category
             if (topic || category) {

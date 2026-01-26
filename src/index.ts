@@ -837,10 +837,10 @@ app.get('/api/exercises/export', async (c) => {
   }
 
   const subject = c.req.query('subject') as Subject | undefined;
-  
+
   try {
     const exportData = await exportExercisesToJSON(c.env.EDU_DB, subject);
-    
+
     // Return as downloadable JSON
     return new Response(JSON.stringify(exportData, null, 2), {
       headers: {

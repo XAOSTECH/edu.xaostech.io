@@ -29,15 +29,8 @@ id = "${KV_PROGRESS_ID}"
 binding = "SESSIONS_KV"
 id = "${KV_SESSIONS_ID}"
 
-[[env.production.d1_databases]]
-binding = "EDU_DB"
-database_name = "edu-xaostech-db"
-database_id = "${D1_EDU_DB_ID}"
-
-[[env.production.d1_databases]]
-binding = "ACCOUNT_DB"
-database_name = "account-db"
-database_id = "${D1_ACCOUNT_DB_ID}"
+# D1 database access via API proxy (data.xaostech.io)
+# Direct D1 bindings removed - use fetch to /api/data/* endpoints
 
 [env.production.ai]
 binding = "AI"
