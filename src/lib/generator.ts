@@ -529,7 +529,7 @@ export async function generateExercise(
         // If no AI models worked, use smart fallback (try D1 first, then static bank)
         if (!generated) {
             console.warn(`[GENERATOR] All models failed for exercise ${i + 1}, using smart fallback`);
-            
+
             // Try D1 database first
             const d1Exercise = env.EDU_DB ? await getExerciseFromD1(
                 env.EDU_DB,
@@ -538,7 +538,7 @@ export async function generateExercise(
                 request.topic,
                 request.difficulty
             ) : null;
-            
+
             if (d1Exercise) {
                 exercises.push(d1Exercise);
             } else {
