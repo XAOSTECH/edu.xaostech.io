@@ -1,37 +1,22 @@
 -- =============================================================================
 -- Exercise Bank D1 Migration
--- Migrates static exercise data from TypeScript to D1 database
+-- Extends the exercises table from 0001 with additional columns for the exercise bank,
+-- then seeds static exercise data.
 -- =============================================================================
 
--- Exercises table - stores all exercise templates
-CREATE TABLE IF NOT EXISTS exercises (
-  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-  subject TEXT NOT NULL, -- 'mathematics', 'science', 'history', 'language', 'computer-science'
-  category TEXT, -- e.g., 'algebra', 'biology', 'american-history'
-  topic TEXT NOT NULL,
-  difficulty TEXT NOT NULL CHECK (difficulty IN ('beginner', 'intermediate', 'advanced', 'expert')),
-  type TEXT NOT NULL CHECK (type IN ('multiple-choice', 'fill-blank', 'calculation', 'free-response', 'matching', 'ordering')),
-  instruction TEXT NOT NULL,
-  content_json TEXT NOT NULL, -- JSON blob for flexible content types
-  solution_json TEXT NOT NULL, -- JSON blob with correctAnswer, explanation, steps
-  hints_json TEXT, -- JSON array of hint strings
-  tags_json TEXT, -- JSON array of tag strings
-  content_rating TEXT DEFAULT 'E', -- E, E10, T, M
-  min_age INTEGER DEFAULT 0,
-  is_active INTEGER DEFAULT 1,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+-- Add columns needed for exercise bank (0001 created exercises with a different schema)
+ALTER TABLE exercises ADD COLUMN instruction TEXT NOT NULL DEFAULT '';
+ALTER TABLE exercises ADD COLUMN content_json TEXT;
+ALTER TABLE exercises ADD COLUMN content_rating TEXT DEFAULT 'E';
+ALTER TABLE exercises ADD COLUMN min_age INTEGER DEFAULT 0;
+ALTER TABLE exercises ADD COLUMN is_active INTEGER DEFAULT 1;
+ALTER TABLE exercises ADD COLUMN tags_json TEXT;
+ALTER TABLE exercises ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
 
--- Indexes for efficient querying
-CREATE INDEX IF NOT EXISTS idx_exercises_subject ON exercises(subject);
-CREATE INDEX IF NOT EXISTS idx_exercises_topic ON exercises(topic);
-CREATE INDEX IF NOT EXISTS idx_exercises_difficulty ON exercises(difficulty);
+-- Indexes for exercise bank queries
 CREATE INDEX IF NOT EXISTS idx_exercises_type ON exercises(type);
 CREATE INDEX IF NOT EXISTS idx_exercises_rating ON exercises(content_rating);
 CREATE INDEX IF NOT EXISTS idx_exercises_active ON exercises(is_active);
-
--- Composite index for common queries
 CREATE INDEX IF NOT EXISTS idx_exercises_subject_difficulty ON exercises(subject, difficulty);
 
 -- =============================================================================
