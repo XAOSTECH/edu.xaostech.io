@@ -31,10 +31,22 @@ interface SessionUser {
 }
 
 /**
- * Send parent notification via account service
+ * Forward auth headers from the incoming request for API proxy calls
+ */
+function getProxyHeaders(c: Context): Record<string, string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const cookie = c.req.header('Cookie');
+    if (cookie) headers['Cookie'] = cookie;
+    const cfJwt = c.req.header('Cf-Access-Jwt-Assertion');
+    if (cfJwt) headers['Cf-Access-Jwt-Assertion'] = cfJwt;
+    return headers;
+}
+
+/**
+ * Send parent notification via API proxy
  */
 export async function sendParentNotification(
-    accountDb: any,
+    c: Context,
     parentId: string,
     childId: string,
     type: 'login' | 'time_limit' | 'content_flag' | 'approval_request',
@@ -42,81 +54,49 @@ export async function sendParentNotification(
     message: string,
     data?: Record<string, unknown>
 ): Promise<void> {
-    if (!accountDb) return;
-
     try {
-        await accountDb.prepare(`
-            INSERT INTO parent_notifications (
-                parent_id, child_id, notification_type, title, message, data,
-                status, delivery_method, created_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, 'pending', 'email', datetime('now'))
-        `).bind(
-            parentId,
-            childId,
-            type,
-            title,
-            message,
-            data ? JSON.stringify(data) : null
-        ).run();
+        await fetch('https://api.xaostech.io/account/notifications', {
+            method: 'POST',
+            headers: getProxyHeaders(c),
+            body: JSON.stringify({ parentId, childId, type, title, message, data }),
+        });
     } catch {
         // Silently fail notification - don't break user flow
     }
 }
 
 /**
- * Get user from session and check if child account with controls
+ * Get user from session via API proxy and check if child account with controls
  */
 export async function getSessionWithControls(c: Context): Promise<SessionUser | null> {
-    const cookie = c.req.header('Cookie') || '';
-    const match = cookie.match(/session_id=([^;]+)/);
-
-    if (!match) return null;
-
-    const sessionsKv = c.env.SESSIONS_KV;
-    if (!sessionsKv) return null;
-
     try {
-        const sessionData = await sessionsKv.get(match[1]);
-        if (!sessionData) return null;
+        const cookie = c.req.header('Cookie') || '';
+        if (!cookie.includes('session_id=')) return null;
 
-        const session = JSON.parse(sessionData);
-        if (session.expires && session.expires < Date.now()) return null;
+        const headers: Record<string, string> = { Cookie: cookie };
+        const cfJwt = c.req.header('Cf-Access-Jwt-Assertion');
+        if (cfJwt) headers['Cf-Access-Jwt-Assertion'] = cfJwt;
 
-        const user: SessionUser = {
-            id: session.userId || session.id,
-            userId: session.userId || session.id,
-            email: session.email,
-            username: session.username,
-            role: session.role || 'user',
-            avatar_url: session.avatar_url,
-            isChild: false,
+        const resp = await fetch('https://api.xaostech.io/auth/me', { headers });
+        if (!resp.ok) return null;
+
+        const data = await resp.json() as {
+            userId: string; role: string; username?: string;
+            email?: string; avatar_url?: string;
+            isChild?: boolean; parentId?: string; controls?: ChildControls;
         };
 
-        // Check if this is a child account
-        const accountDb = c.env.ACCOUNT_DB;
-        if (accountDb) {
-            const childAccount = await accountDb.prepare(`
-        SELECT ca.parent_id, pc.*
-        FROM child_accounts ca
-        JOIN parental_controls pc ON ca.child_id = pc.child_id
-        WHERE ca.child_id = ?
-      `).bind(user.id).first();
-
-            if (childAccount) {
-                user.isChild = true;
-                user.parentId = childAccount.parent_id as string;
-                user.controls = {
-                    content_filter_level: (childAccount.content_filter_level as 'strict' | 'moderate' | 'minimal') || 'strict',
-                    blocked_topics: JSON.parse((childAccount.blocked_topics as string) || '[]'),
-                    daily_time_limit: childAccount.daily_time_limit as number | null,
-                    weekly_time_limit: childAccount.weekly_time_limit as number | null,
-                    allowed_hours: JSON.parse((childAccount.allowed_hours as string) || '{"weekday":{"start":"08:00","end":"20:00"},"weekend":{"start":"09:00","end":"21:00"}}'),
-                    can_post_content: !!(childAccount.can_post_content),
-                    require_approval: !!(childAccount.require_approval),
-                };
-            }
-        }
+        const user: SessionUser = {
+            id: data.userId,
+            userId: data.userId,
+            email: data.email,
+            username: data.username,
+            role: data.role || 'user',
+            avatar_url: data.avatar_url,
+            isChild: data.isChild || false,
+            parentId: data.parentId,
+            controls: data.controls,
+        };
 
         return user;
     } catch {
@@ -139,28 +119,21 @@ export function isWithinAllowedHours(controls: ChildControls): boolean {
 }
 
 /**
- * Check daily time limit for child
+ * Check daily time limit for child via API proxy
  */
 export async function checkTimeLimit(c: Context, userId: string, controls: ChildControls): Promise<{ allowed: boolean; minutesRemaining: number }> {
     if (!controls.daily_time_limit) {
         return { allowed: true, minutesRemaining: -1 };
     }
 
-    const accountDb = c.env.ACCOUNT_DB;
-    if (!accountDb) {
-        return { allowed: true, minutesRemaining: -1 };
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-
     try {
-        const tracking = await accountDb.prepare(`
-      SELECT minutes_used FROM child_time_tracking
-      WHERE child_id = ? AND date = ?
-    `).bind(userId, today).first();
+        const resp = await fetch(`https://api.xaostech.io/account/children/${encodeURIComponent(userId)}/time-limit`, {
+            headers: getProxyHeaders(c),
+        });
+        if (!resp.ok) return { allowed: true, minutesRemaining: -1 };
 
-        const minutesUsed = (tracking?.minutes_used as number) || 0;
-        const minutesRemaining = controls.daily_time_limit - minutesUsed;
+        const data = await resp.json() as { minutesUsed: number };
+        const minutesRemaining = controls.daily_time_limit - (data.minutesUsed || 0);
 
         return {
             allowed: minutesRemaining > 0,
@@ -172,7 +145,7 @@ export async function checkTimeLimit(c: Context, userId: string, controls: Child
 }
 
 /**
- * Log activity for child account
+ * Log activity for child account via API proxy
  */
 export async function logChildActivity(
     c: Context,
@@ -181,43 +154,27 @@ export async function logChildActivity(
     activityData?: Record<string, any>,
     flagged: boolean = false
 ): Promise<void> {
-    const accountDb = c.env.ACCOUNT_DB;
-    if (!accountDb) return;
-
     try {
-        await accountDb.prepare(`
-      INSERT INTO child_activity (child_id, activity_type, activity_data, flagged, created_at)
-      VALUES (?, ?, ?, ?, datetime('now'))
-    `).bind(
-            childId,
-            activityType,
-            activityData ? JSON.stringify(activityData) : null,
-            flagged ? 1 : 0
-        ).run();
+        await fetch('https://api.xaostech.io/account/children/activity', {
+            method: 'POST',
+            headers: getProxyHeaders(c),
+            body: JSON.stringify({ childId, activityType, activityData, flagged }),
+        });
     } catch {
         // Silently fail activity logging
     }
 }
 
 /**
- * Update time tracking for child
+ * Update time tracking for child via API proxy
  */
 export async function updateTimeTracking(c: Context, childId: string, minutesSpent: number): Promise<void> {
-    const accountDb = c.env.ACCOUNT_DB;
-    if (!accountDb) return;
-
-    const today = new Date().toISOString().split('T')[0];
-
     try {
-        await accountDb.prepare(`
-      INSERT INTO child_time_tracking (child_id, date, minutes_used, sessions_count, last_session_end, updated_at)
-      VALUES (?, ?, ?, 1, datetime('now'), datetime('now'))
-      ON CONFLICT(child_id, date) DO UPDATE SET
-        minutes_used = minutes_used + ?,
-        sessions_count = sessions_count + 1,
-        last_session_end = datetime('now'),
-        updated_at = datetime('now')
-    `).bind(childId, today, minutesSpent, minutesSpent).run();
+        await fetch(`https://api.xaostech.io/account/children/${encodeURIComponent(childId)}/time-tracking`, {
+            method: 'POST',
+            headers: getProxyHeaders(c),
+            body: JSON.stringify({ minutesSpent }),
+        });
     } catch {
         // Silently fail time tracking
     }
@@ -289,7 +246,7 @@ export function parentalControlsMiddleware() {
             // Send notification to parent
             if (user.parentId) {
                 await sendParentNotification(
-                    c.env.ACCOUNT_DB,
+                    c,
                     user.parentId,
                     user.id,
                     'time_limit',
@@ -334,7 +291,7 @@ export async function notifyContentFlagged(
     if (!user.isChild || !user.parentId) return;
 
     await sendParentNotification(
-        c.env.ACCOUNT_DB,
+        c,
         user.parentId,
         user.id,
         'content_flag',

@@ -25,12 +25,9 @@ id = "${KV_EXERCISES_ID}"
 binding = "PROGRESS_KV"
 id = "${KV_PROGRESS_ID}"
 
-[[env.production.kv_namespaces]]
-binding = "SESSIONS_KV"
-id = "${KV_SESSIONS_ID}"
-
+# Auth via API proxy (api.xaostech.io/auth/me)
 # D1 database access via API proxy (data.xaostech.io)
-# Direct D1 bindings removed - use fetch to /api/data/* endpoints
+# Direct D1/session bindings removed - use fetch to api endpoints
 
 [env.production.ai]
 binding = "AI"

@@ -62,25 +62,35 @@ app.use('*', cors({
 // Parental controls middleware (checks time limits, allowed hours for child accounts)
 app.use('*', parentalControlsMiddleware());
 
-// Rate limiting (simple in-memory for demo, use Durable Objects in production)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
+// Rate limiting via KV (persists across Worker invocations, unlike in-memory Map)
 app.use('/generate/*', async (c, next) => {
   const ip = c.req.header('CF-Connecting-IP') || 'unknown';
   const now = Date.now();
   const limit = parseInt(c.env.RATE_LIMIT_PER_MINUTE) || 30;
+  const key = `ratelimit:${ip}`;
 
-  const entry = rateLimitMap.get(ip);
-  if (entry && entry.resetAt > now) {
-    if (entry.count >= limit) {
-      return c.json({
-        error: 'Rate limit exceeded',
-        retryAfter: Math.ceil((entry.resetAt - now) / 1000),
-      }, 429);
+  try {
+    const raw = await c.env.EXERCISES_KV.get(key);
+    if (raw) {
+      const entry = JSON.parse(raw) as { count: number; resetAt: number };
+      if (entry.resetAt > now) {
+        if (entry.count >= limit) {
+          return c.json({
+            error: 'Rate limit exceeded',
+            retryAfter: Math.ceil((entry.resetAt - now) / 1000),
+          }, 429);
+        }
+        entry.count++;
+        await c.env.EXERCISES_KV.put(key, JSON.stringify(entry), { expirationTtl: 60 });
+      } else {
+        await c.env.EXERCISES_KV.put(key, JSON.stringify({ count: 1, resetAt: now + 60000 }), { expirationTtl: 60 });
+      }
+    } else {
+      await c.env.EXERCISES_KV.put(key, JSON.stringify({ count: 1, resetAt: now + 60000 }), { expirationTtl: 60 });
     }
-    entry.count++;
-  } else {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 60000 });
+  } catch (e) {
+    // If KV fails, allow the request rather than blocking
+    console.error('[RATE_LIMIT] KV error:', e);
   }
 
   await next();
