@@ -834,6 +834,193 @@ app.get('/health', (c) => {
 });
 
 // =============================================================================
+// PROGRESS — STUB / SCAFFOLD (backed by env.PROGRESS_KV)
+// =============================================================================
+// Storage shape (proposed):
+//   prog:<userId>:<courseId>  → JSON { courseId, currentChapter, completedChapters: [],
+//                                       percent, lastAccessed, xp }
+//   prog:<userId>:_summary    → JSON { activeCourseId, totalXp, streakDays }
+
+app.get('/api/progress/:courseId', async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ error: 'auth required' }, 401);
+  const courseId = c.req.param('courseId');
+  // TODO: const data = await c.env.PROGRESS_KV.get(`prog:${user.id}:${courseId}`, 'json');
+  return c.json({
+    courseId,
+    currentChapter: 0,
+    completedChapters: [],
+    percent: 0,
+    xp: 0,
+    _stub: true,
+  });
+});
+
+app.put('/api/progress/:courseId', async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ error: 'auth required' }, 401);
+  const courseId = c.req.param('courseId');
+  const body = await c.req.json();
+  // TODO: validate, merge, write to PROGRESS_KV with key `prog:${user.id}:${courseId}`
+  return c.json({ ok: true, courseId, received: body, _stub: true });
+});
+
+app.get('/api/progress/_summary', async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ error: 'auth required' }, 401);
+  // TODO: PROGRESS_KV.get(`prog:${user.id}:_summary`, 'json')
+  return c.json({ activeCourseId: null, totalXp: 0, streakDays: 0, _stub: true });
+});
+
+// =============================================================================
+// COURSES — STUB / SCAFFOLD
+// =============================================================================
+// Eventually backed by learning-db D1 (tables: courses, chapters, lessons).
+// For now returns a hardcoded catalog so the /courses panel renders.
+
+const STUB_COURSES = [
+  {
+    id: 'intro-3d-graphics',
+    title: 'Intro to 3D Graphics with WebGPU',
+    subject: 'computer-science',
+    chapters: [
+      { id: 'c1', title: 'Coordinate spaces',         durationMin: 20 },
+      { id: 'c2', title: 'Vertex & fragment shaders', durationMin: 35 },
+      { id: 'c3', title: 'Lighting models',           durationMin: 40 },
+      { id: 'c4', title: 'Compute shaders',           durationMin: 45 },
+    ],
+    renderer: 'threejs', // 'threejs' | 'webgpu' | 'static'
+  },
+  {
+    id: 'algebra-foundations',
+    title: 'Algebra Foundations',
+    subject: 'mathematics',
+    chapters: [
+      { id: 'c1', title: 'Variables & expressions', durationMin: 15 },
+      { id: 'c2', title: 'Linear equations',         durationMin: 25 },
+      { id: 'c3', title: 'Systems of equations',     durationMin: 30 },
+    ],
+    renderer: 'static',
+  },
+];
+
+app.get('/api/courses', async (c) => {
+  return c.json({ courses: STUB_COURSES, _stub: true });
+});
+
+app.get('/api/courses/:courseId', async (c) => {
+  const courseId = c.req.param('courseId');
+  const course = STUB_COURSES.find((x) => x.id === courseId);
+  if (!course) return c.json({ error: 'not found' }, 404);
+  return c.json({ ...course, _stub: true });
+});
+
+// HTML course panel — Astro-compatible static fallback when JS disabled.
+// Real Astro page lives in a separate Astro worker if/when we split it out;
+// for now this serves a self-contained page with optional threejs hydration.
+app.get('/courses', async (c) => {
+  const html = `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Courses · XAOSTECH Edu</title>
+<style>
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0e0e1a;color:#eee}
+  header{padding:1.5rem 2rem;border-bottom:1px solid #ffffff15}
+  h1{margin:0;font-size:1.4rem;color:#00d4ff}
+  main{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 76px)}
+  nav{border-right:1px solid #ffffff15;padding:1rem;overflow:auto}
+  .course{display:block;padding:.75rem;border-radius:8px;color:inherit;text-decoration:none;cursor:pointer}
+  .course:hover,.course.active{background:#ffffff10}
+  .course .t{font-weight:600}
+  .course .s{font-size:.8rem;opacity:.6}
+  section{padding:2rem;overflow:auto}
+  .timeline{display:flex;flex-direction:column;gap:.75rem;margin-top:1.5rem}
+  .ch{display:flex;align-items:center;gap:1rem;padding:1rem;background:#ffffff08;border-radius:8px;border-left:3px solid #00d4ff44}
+  .ch.done{border-left-color:#43a047}
+  .ch.active{border-left-color:#00d4ff;background:#00d4ff14}
+  .ch .num{width:32px;height:32px;border-radius:50%;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-weight:700;color:#00d4ff}
+  .ch .meta{flex:1}
+  .ch .meta .t{font-weight:600}
+  .ch .meta .d{font-size:.8rem;opacity:.6}
+  #stage{margin-top:2rem;height:400px;background:#000;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#666}
+  #stage canvas{width:100%;height:100%;display:block;border-radius:12px}
+  .badge{display:inline-block;font-size:.7rem;padding:.15rem .5rem;border-radius:99px;background:#ffffff15;margin-left:.5rem}
+</style>
+</head><body>
+<header><h1>Courses</h1></header>
+<main>
+  <nav id="course-list"></nav>
+  <section id="course-detail">
+    <p style="opacity:.6">Select a course from the left.</p>
+  </section>
+</main>
+<script type="module">
+  // Static-friendly hydration: works without JS by linking to /courses/:id
+  // (server-rendered fallback page would live at that path; TODO).
+  const listEl = document.getElementById('course-list');
+  const detailEl = document.getElementById('course-detail');
+
+  async function loadCourses() {
+    const r = await fetch('/api/courses');
+    const { courses } = await r.json();
+    listEl.innerHTML = courses.map(c => \`
+      <a class="course" data-id="\${c.id}">
+        <div class="t">\${c.title}</div>
+        <div class="s">\${c.subject} · \${c.chapters.length} chapters</div>
+      </a>
+    \`).join('');
+    listEl.querySelectorAll('.course').forEach(el => {
+      el.addEventListener('click', () => selectCourse(el.dataset.id));
+    });
+    if (courses[0]) selectCourse(courses[0].id);
+  }
+
+  async function selectCourse(id) {
+    document.querySelectorAll('.course').forEach(e => e.classList.toggle('active', e.dataset.id === id));
+    const [course, prog] = await Promise.all([
+      fetch('/api/courses/' + id).then(r => r.json()),
+      fetch('/api/progress/' + id, { credentials: 'include' }).then(r => r.ok ? r.json() : { completedChapters: [], currentChapter: 0 }),
+    ]);
+    detailEl.innerHTML = \`
+      <h2>\${course.title} <span class="badge">\${course.renderer}</span></h2>
+      <div class="timeline">
+        \${course.chapters.map((ch, i) => {
+          const done = prog.completedChapters?.includes(ch.id);
+          const active = i === prog.currentChapter;
+          return \`<div class="ch \${done ? 'done' : ''} \${active ? 'active' : ''}">
+            <div class="num">\${done ? '✓' : i + 1}</div>
+            <div class="meta"><div class="t">\${ch.title}</div><div class="d">\${ch.durationMin} min</div></div>
+          </div>\`;
+        }).join('')}
+      </div>
+      <div id="stage">\${course.renderer === 'threejs' ? 'Three.js scene loading…' : course.renderer === 'webgpu' ? 'WebGPU scene loading…' : 'Static lesson — see chapters above'}</div>
+    \`;
+    if (course.renderer === 'threejs') hydrateThreeScene();
+    if (course.renderer === 'webgpu') hydrateWebGPU();
+  }
+
+  async function hydrateThreeScene() {
+    // TODO: dynamic import three from CDN, render a chapter-specific scene.
+    // Kept as scaffold: a simple rotating cube would go here.
+    const stage = document.getElementById('stage');
+    if (!stage) return;
+    stage.textContent = 'Three.js scaffold — implement scene per chapter';
+  }
+
+  async function hydrateWebGPU() {
+    const stage = document.getElementById('stage');
+    if (!stage) return;
+    if (!('gpu' in navigator)) { stage.textContent = 'WebGPU unavailable in this browser — falling back to Three.js'; hydrateThreeScene(); return; }
+    stage.textContent = 'WebGPU scaffold — implement render pipeline per chapter';
+  }
+
+  loadCourses();
+</script>
+</body></html>`;
+  return c.html(html);
+});
+
+// =============================================================================
 // EXERCISE BANK EXPORT (for backup/versioning)
 // =============================================================================
 
