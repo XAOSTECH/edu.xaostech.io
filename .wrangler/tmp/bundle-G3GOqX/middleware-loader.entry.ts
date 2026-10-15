@@ -1,7 +1,4 @@
-// This loads all middlewares exposed on the middleware object and then starts
-// the invocation chain. The big idea is that we can add these to the middleware
-// export dynamically through wrangler, or we can potentially let users directly
-// add them as a sort of "plugin" system.
+// This loads all middlewares exposed on the middleware object and then starts the invocation chain. The big idea is that we can add these to the middleware export dynamically through wrangler, or we can potentially let users directly add them as a sort of "plugin" system.
 
 import ENTRY, { __INTERNAL_WRANGLER_MIDDLEWARE__ } from "/workspaces/XAOSTECH/edu.xaostech.io/.wrangler/tmp/bundle-G3GOqX/middleware-insertion-facade.js";
 import { __facade_invoke__, __facade_register__, Dispatcher } from "/workspaces/XAOSTECH/edu.xaostech.io/node_modules/wrangler/templates/middleware/common.ts";
