@@ -9453,13 +9453,9 @@ interface D1ExecResult {
     duration: number;
 }
 type D1SessionConstraint = 
-// Indicates that the first query should go to the primary, and the rest queries
-// using the same D1DatabaseSession will go to any replica that is consistent with
-// the bookmark maintained by the session (returned by the first query).
+// Indicates that the first query should go to the primary, and the rest queries using the same D1DatabaseSession will go to any replica that is consistent with the bookmark maintained by the session (returned by the first query).
 'first-primary'
-// Indicates that the first query can go anywhere (primary or replica), and the rest queries
-// using the same D1DatabaseSession will go to any replica that is consistent with
-// the bookmark maintained by the session (returned by the first query).
+// Indicates that the first query can go anywhere (primary or replica), and the rest queries using the same D1DatabaseSession will go to any replica that is consistent with the bookmark maintained by the session (returned by the first query).
  | 'first-unconstrained';
 type D1SessionBookmark = string;
 declare abstract class D1Database {
@@ -9506,10 +9502,8 @@ declare abstract class D1PreparedStatement {
 }
 // `Disposable` was added to TypeScript's standard lib types in version 5.2.
 // To support older TypeScript versions, define an empty `Disposable` interface.
-// Users won't be able to use `using`/`Symbol.dispose` without upgrading to 5.2,
-// but this will ensure type checking on older versions still passes.
-// TypeScript's interface merging will ensure our empty interface is effectively
-// ignored when `Disposable` is included in the standard lib.
+// Users won't be able to use `using`/`Symbol.dispose` without upgrading to 5.2, but this will ensure type checking on older versions still passes.
+// TypeScript's interface merging will ensure our empty interface is effectively ignored when `Disposable` is included in the standard lib.
 interface Disposable {
 }
 /**
@@ -9963,8 +9957,7 @@ declare module "cloudflare:pipelines" {
     }
 }
 // PubSubMessage represents an incoming PubSub message.
-// The message includes metadata about the broker, the client, and the payload
-// itself.
+// The message includes metadata about the broker, the client, and the payload itself.
 // https://developers.cloudflare.com/pub-sub/
 interface PubSubMessage {
     // Message ID
@@ -9975,14 +9968,11 @@ interface PubSubMessage {
     readonly topic: string;
     // The client ID of the client that published this message.
     readonly clientId: string;
-    // The unique identifier (JWT ID) used by the client to authenticate, if token
-    // auth was used.
+    // The unique identifier (JWT ID) used by the client to authenticate, if token auth was used.
     readonly jti?: string;
-    // A Unix timestamp (seconds from Jan 1, 1970), set when the Pub/Sub Broker
-    // received the message from the client.
+    // A Unix timestamp (seconds from Jan 1, 1970), set when the Pub/Sub Broker received the message from the client.
     readonly receivedAt: number;
-    // An (optional) string with the MIME type of the payload, if set by the
-    // client.
+    // An (optional) string with the MIME type of the payload, if set by the client.
     readonly contentType: string;
     // Set to 1 when the payload is a UTF-8 string
     // https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901063
@@ -10010,14 +10000,11 @@ interface RateLimit {
      */
     limit(options: RateLimitOptions): Promise<RateLimitOutcome>;
 }
-// Namespace for RPC utility types. Unfortunately, we can't use a `module` here as these types need
-// to referenced by `Fetcher`. This is included in the "importable" version of the types which
-// strips all `module` blocks.
+// Namespace for RPC utility types. Unfortunately, we can't use a `module` here as these types need to referenced by `Fetcher`. This is included in the "importable" version of the types which strips all `module` blocks.
 declare namespace Rpc {
     // Branded types for identifying `WorkerEntrypoint`/`DurableObject`/`Target`s.
     // TypeScript uses *structural* typing meaning anything with the same shape as type `T` is a `T`.
-    // For the classes exported by `cloudflare:workers` we want *nominal* typing (i.e. we only want to
-    // accept `WorkerEntrypoint` from `cloudflare:workers`, not any other class with the same shape)
+    // For the classes exported by `cloudflare:workers` we want *nominal* typing (i.e. we only want to accept `WorkerEntrypoint` from `cloudflare:workers`, not any other class with the same shape)
     export const __RPC_STUB_BRAND: '__RPC_STUB_BRAND';
     export const __RPC_TARGET_BRAND: '__RPC_TARGET_BRAND';
     export const __WORKER_ENTRYPOINT_BRAND: '__WORKER_ENTRYPOINT_BRAND';
@@ -10113,16 +10100,14 @@ declare namespace Rpc {
 declare namespace Cloudflare {
     // Type of `env`.
     //
-    // The specific project can extend `Env` by redeclaring it in project-specific files. Typescript
-    // will merge all declarations.
+    // The specific project can extend `Env` by redeclaring it in project-specific files. Typescript will merge all declarations.
     //
     // You can use `wrangler types` to generate the `Env` type automatically.
     interface Env {
     }
     // Project-specific parameters used to inform types.
     //
-    // This interface is, again, intended to be declared in project-specific files, and then that
-    // declaration will be merged with this one.
+    // This interface is, again, intended to be declared in project-specific files, and then that declaration will be merged with this one.
     //
     // A project should have a declaration like this:
     //
@@ -10139,8 +10124,7 @@ declare namespace Cloudflare {
     // You can use `wrangler types` to generate `GlobalProps` automatically.
     interface GlobalProps {
     }
-    // Evaluates to the type of a property in GlobalProps, defaulting to `Default` if it is not
-    // present.
+    // Evaluates to the type of a property in GlobalProps, defaulting to `Default` if it is not present.
     type GlobalProp<K extends string, Default> = K extends keyof GlobalProps ? GlobalProps[K] : Default;
     // The type of the program's main module exports, if known. Requires `GlobalProps` to declare the
     // `mainModule` property.
@@ -10415,9 +10399,7 @@ declare namespace TailStream {
         readonly message: object;
     }
     // This marks the worker handler return information.
-    // This is separate from Outcome because the worker invocation can live for a long time after
-    // returning. For example - Websockets that return an http upgrade response but then continue
-    // streaming information or SSE http connections.
+    // This is separate from Outcome because the worker invocation can live for a long time after returning. For example - Websockets that return an http upgrade response but then continue streaming information or SSE http connections.
     interface Return {
         readonly type: "return";
         readonly info?: FetchResponseInfo;
@@ -10434,13 +10416,9 @@ declare namespace TailStream {
     // Context in which this trace event lives.
     interface SpanContext {
         // Single id for the entire top-level invocation
-        // This should be a new traceId for the first worker stage invoked in the eyeball request and then
-        // same-account service-bindings should reuse the same traceId but cross-account service-bindings
-        // should use a new traceId.
+        // This should be a new traceId for the first worker stage invoked in the eyeball request and then same-account service-bindings should reuse the same traceId but cross-account service-bindings should use a new traceId.
         readonly traceId: string;
-        // spanId in which this event is handled
-        // for Onset and SpanOpen events this would be the parent span id
-        // for Outcome and SpanClose these this would be the span id of the opening Onset and SpanOpen events
+        // spanId in which this event is handled for Onset and SpanOpen events this would be the parent span id for Outcome and SpanClose these this would be the span id of the opening Onset and SpanOpen events
         // For Hibernate and Mark this would be the span under which they were emitted.
         // spanId is not set ONLY if:
         //  1. This is an Onset event

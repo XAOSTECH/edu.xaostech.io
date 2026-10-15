@@ -214,8 +214,7 @@ var RpcStub = class _RpcStub extends RpcTarget {
   static {
     __name(this, "_RpcStub");
   }
-  // Although `hook` and `path` are declared `public` here, they are effectively hidden by the
-  // proxy.
+  // Although `hook` and `path` are declared `public` here, they are effectively hidden by the proxy.
   constructor(hook, pathIfPromise) {
     super();
     if (!(hook instanceof StubHook)) {
@@ -329,24 +328,17 @@ var RpcPayload = class _RpcPayload {
   // Create a payload from a value passed as params to an RPC from the app.
   //
   // The payload does NOT take ownership of any stubs in `value`, and but promises not to modify
-  // `value`. If the payload is delivered locally, `value` will be deep-copied first, so as not
-  // to have the sender and recipient end up sharing the same mutable object. `value` will not be
-  // touched again after the call returns synchronously (returns a promise) -- by that point,
-  // the value has either been copied or serialized to the wire.
+  // `value`. If the payload is delivered locally, `value` will be deep-copied first, so as not to have the sender and recipient end up sharing the same mutable object. `value` will not be touched again after the call returns synchronously (returns a promise) -- by that point, the value has either been copied or serialized to the wire.
   static fromAppParams(value) {
     return new _RpcPayload(value, "params");
   }
   // Create a payload from a value return from an RPC implementation by the app.
   //
-  // Unlike fromAppParams(), in this case the payload takes ownership of all stubs in `value`, and
-  // may hold onto `value` for an arbitarily long time (e.g. to serve pipelined requests). It
-  // will still avoid modifying `value` and will make a deep copy if it is delivered locally.
+  // Unlike fromAppParams(), in this case the payload takes ownership of all stubs in `value`, and may hold onto `value` for an arbitarily long time (e.g. to serve pipelined requests). It will still avoid modifying `value` and will make a deep copy if it is delivered locally.
   static fromAppReturn(value) {
     return new _RpcPayload(value, "return");
   }
-  // Combine an array of payloads into a single payload whose value is an array. Ownership of all
-  // stubs is transferred from the inputs to the outputs, hence if the output is disposed, the
-  // inputs should not be. (In case of exception, nothing is disposed, though.)
+  // Combine an array of payloads into a single payload whose value is an array. Ownership of all stubs is transferred from the inputs to the outputs, hence if the output is disposed, the inputs should not be. (In case of exception, nothing is disposed, though.)
   static fromArray(array) {
     let stubs = [];
     let promises = [];
@@ -372,15 +364,9 @@ var RpcPayload = class _RpcPayload {
   }
   // Create a payload from a value parsed off the wire using Evaluator.evaluate().
   //
-  // A payload is constructed with a null value and the given stubs and promises arrays. The value
-  // is expected to be filled in by the evaluator, and the stubs and promises arrays are expected
-  // to be extended with stubs found during parsing. (This weird usage model is necessary so that
-  // if the root value turns out to be a promise, its `parent` in `promises` can be the payload
-  // object itself.)
+  // A payload is constructed with a null value and the given stubs and promises arrays. The value is expected to be filled in by the evaluator, and the stubs and promises arrays are expected to be extended with stubs found during parsing. (This weird usage model is necessary so that if the root value turns out to be a promise, its `parent` in `promises` can be the payload object itself.)
   //
-  // When done, the payload takes ownership of the final value and all the stubs within. It may
-  // modify the value in preparation for delivery, and may deliver the value directly to the app
-  // without copying.
+  // When done, the payload takes ownership of the final value and all the stubs within. It may modify the value in preparation for delivery, and may deliver the value directly to the app without copying.
   static forEvaluate(stubs, promises) {
     return new _RpcPayload(null, "owned", stubs, promises);
   }
@@ -403,9 +389,7 @@ var RpcPayload = class _RpcPayload {
     );
     return result;
   }
-  // For `soruce === "return"` payloads only, this tracks any StubHooks created around RpcTargets
-  // found in the payload at the time that it is serialized (or deep-copied) for return, so that we
-  // can make sure they are not disposed before the pipeline ends.
+  // For `soruce === "return"` payloads only, this tracks any StubHooks created around RpcTargets found in the payload at the time that it is serialized (or deep-copied) for return, so that we can make sure they are not disposed before the pipeline ends.
   //
   // This is initialized on first use.
   rpcTargets;
@@ -513,8 +497,7 @@ var RpcPayload = class _RpcPayload {
         throw new Error("unreachable");
     }
   }
-  // Ensures that if the value originally came from an unowned source, we have replaced it with a
-  // deep copy.
+  // Ensures that if the value originally came from an unowned source, we have replaced it with a deep copy.
   ensureDeepCopied() {
     if (this.source !== "owned") {
       let dupStubs = this.source === "params";
@@ -564,13 +547,9 @@ var RpcPayload = class _RpcPayload {
       }));
     }
   }
-  // Call the given function with the payload as an argument. The call is made synchronously if
-  // possible, in order to maintain e-order. However, if any RpcPromises exist in the payload,
-  // they are awaited and substituted before calling the function. The result of the call is
-  // wrapped into another payload.
+  // Call the given function with the payload as an argument. The call is made synchronously if possible, in order to maintain e-order. However, if any RpcPromises exist in the payload, they are awaited and substituted before calling the function. The result of the call is wrapped into another payload.
   //
-  // The payload is automatically disposed after the call completes. The caller should not call
-  // dispose().
+  // The payload is automatically disposed after the call completes. The caller should not call dispose().
   async deliverCall(func, thisArg) {
     try {
       let promises = [];
@@ -588,11 +567,9 @@ var RpcPayload = class _RpcPayload {
       this.dispose();
     }
   }
-  // Produce a promise for this payload for return to the application. Any RpcPromises in the
-  // payload are awaited and substituted with their results first.
+  // Produce a promise for this payload for return to the application. Any RpcPromises in the payload are awaited and substituted with their results first.
   //
-  // The returned object will have a disposer which disposes the payload. The caller should not
-  // separately dispose it.
+  // The returned object will have a disposer which disposes the payload. The caller should not separately dispose it.
   async deliverResolve() {
     try {
       let promises = [];
@@ -1504,8 +1481,7 @@ var ImportTableEntry = class {
   remoteRefcount = 1;
   activePull;
   resolution;
-  // List of integer indexes into session.onBrokenCallbacks which are callbacks registered on
-  // this import. Initialized on first use (so `undefined` is the same as an empty list).
+  // List of integer indexes into session.onBrokenCallbacks which are callbacks registered on this import. Initialized on first use (so `undefined` is the same as an empty list).
   onBrokenRegistrations;
   resolve(resolution) {
     if (this.localRefcount == 0) {
@@ -1580,8 +1556,7 @@ var RpcImportHook = class _RpcImportHook extends StubHook {
     __name(this, "_RpcImportHook");
   }
   // undefined when we're disposed
-  // `pulling` is true if we already expect that this import is going to be resolved later, and
-  // null if this import is not allowed to be pulled (i.e. it's a stub not a promise).
+  // `pulling` is true if we already expect that this import is going to be resolved later, and null if this import is not allowed to be pulled (i.e. it's a stub not a promise).
   constructor(isPromise, entry) {
     super();
     this.isPromise = isPromise;
@@ -1701,16 +1676,13 @@ var RpcSessionImpl = class {
   imports = [];
   abortReason;
   cancelReadLoop;
-  // We assign positive numbers to imports we initiate, and negative numbers to exports we
-  // initiate. So the next import ID is just `imports.length`, but the next export ID needs
-  // to be tracked explicitly.
+  // We assign positive numbers to imports we initiate, and negative numbers to exports we initiate. So the next import ID is just `imports.length`, but the next export ID needs to be tracked explicitly.
   nextExportId = -1;
   // If set, call this when all incoming calls are complete.
   onBatchDone;
   // How many promises is our peer expecting us to resolve?
   pullCount = 0;
-  // Sparse array of onBrokenCallback registrations. Items are strictly appended to the end but
-  // may be deleted from the middle (hence leaving the array sparse).
+  // Sparse array of onBrokenCallback registrations. Items are strictly appended to the end but may be deleted from the middle (hence leaving the array sparse).
   onBrokenCallbacks = [];
   // Should only be called once immediately after construction.
   getMainImport() {
