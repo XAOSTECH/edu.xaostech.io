@@ -1,0 +1,237 @@
+{
+  "metadata": {
+    "repository": "edu.xaostech.io",
+    "current_branch": "main",
+    "repo_url": "https://github.com/XAOSTECH/edu.xaostech.io",
+    "generated": "2026-10-15T07:48:35Z",
+    "max_commits": 500
+  },
+  "commits": [
+  {
+    "sha": "43c95d3943d5b0886a810fa88298e6c7f3e83d2f",
+    "short": "43c95d3",
+    "parents": "077a90a4e17d90b83b0272a0693f551b550be5b8 4486c4bbdbcde8b6981f41da7b6a361e80e490f3",
+    "author": "xaostech[bot]",
+    "email": "260314499+xaostech[bot]@users.noreply.github.com",
+    "date": "2026-10-15T07:48:35Z",
+    "timestamp": 1792050515,
+    "subject": "Merge pull request #3 from XAOSTECH:humanise/20261015-074801",
+    "refs": "HEAD -> main, origin/main"
+  },
+  {
+    "sha": "4486c4bbdbcde8b6981f41da7b6a361e80e490f3",
+    "short": "4486c4b",
+    "parents": "077a90a4e17d90b83b0272a0693f551b550be5b8",
+    "author": "xaos-bot",
+    "email": "262248812+xaos-bot@users.noreply.github.com",
+    "date": "2026-10-15T07:48:01Z",
+    "timestamp": 1792050481,
+    "subject": "chore: humanise hard-wrapped comments and prose",
+    "refs": "origin/humanise/20261015-074801"
+  },
+  {
+    "sha": "077a90a4e17d90b83b0272a0693f551b550be5b8",
+    "short": "077a90a",
+    "parents": "11e77c95a5d1e4eff411f7c92375a830d069e026",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-10-14T00:03:23+02:00",
+    "timestamp": 1791929003,
+    "subject": "chore(dc-init): update workflows,actions",
+    "refs": ""
+  },
+  {
+    "sha": "11e77c95a5d1e4eff411f7c92375a830d069e026",
+    "short": "11e77c9",
+    "parents": "4715cc00e3f63b3ac912bad8b64cd27bbe32164a",
+    "author": "XAOSTECH",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-04-24T00:12:52Z",
+    "timestamp": 1776989572,
+    "subject": "feat(courses,progress): scaffold /api/progress + /api/courses + /courses HTML panel",
+    "refs": ""
+  },
+  {
+    "sha": "4715cc00e3f63b3ac912bad8b64cd27bbe32164a",
+    "short": "4715cc0",
+    "parents": "2ea51d399e9d832b44d4340189b96378058e5c76",
+    "author": "XAOSTECH",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-04-23T22:33:40Z",
+    "timestamp": 1776983620,
+    "subject": "chore: drop migrations/ (schemas now consolidated in data.xaostech.io/migrations/)",
+    "refs": ""
+  },
+  {
+    "sha": "2ea51d399e9d832b44d4340189b96378058e5c76",
+    "short": "2ea51d3",
+    "parents": "92a38ee6da36dbe12f1744cfb8c7876844ce5179",
+    "author": "XAOSTECH",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-03-31T20:32:55Z",
+    "timestamp": 1774989175,
+    "subject": "fix: replace in-memory rate limiting with KV, route auth through API proxy",
+    "refs": ""
+  },
+  {
+    "sha": "92a38ee6da36dbe12f1744cfb8c7876844ce5179",
+    "short": "92a38ee",
+    "parents": "ebaf8b31f86af63f5abdcc883f8ec035b15e67a1",
+    "author": "XAOSTECH",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-03-31T19:58:17Z",
+    "timestamp": 1774987097,
+    "subject": "chore: consolidate workflows into monorepo",
+    "refs": ""
+  },
+  {
+    "sha": "ebaf8b31f86af63f5abdcc883f8ec035b15e67a1",
+    "short": "ebaf8b3",
+    "parents": "2b16dcdacf6b0e8959ba4d0b43c1e5dd56dabfe3",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-03-05T19:39:50Z",
+    "timestamp": 1772739590,
+    "subject": "chore: gitignore",
+    "refs": ""
+  },
+  {
+    "sha": "2b16dcdacf6b0e8959ba4d0b43c1e5dd56dabfe3",
+    "short": "2b16dcd",
+    "parents": "aeb865bd7215382d18b963fef1f243b25059a199",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-26T17:09:19Z",
+    "timestamp": 1769447359,
+    "subject": "refactor: Remove D1 bindings, use API proxy",
+    "refs": ""
+  },
+  {
+    "sha": "aeb865bd7215382d18b963fef1f243b25059a199",
+    "short": "aeb865b",
+    "parents": "9091303c11902b441c7aab5e772539496472b783",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-25T22:31:52Z",
+    "timestamp": 1769380312,
+    "subject": "feat: Migrate exercise bank to D1 database",
+    "refs": ""
+  },
+  {
+    "sha": "9091303c11902b441c7aab5e772539496472b783",
+    "short": "9091303",
+    "parents": "1ce1d136fa3380f936f98436821efed80da01f19",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-25T22:08:33Z",
+    "timestamp": 1769378913,
+    "subject": "feat: add static exercise bank for AI fallback",
+    "refs": ""
+  },
+  {
+    "sha": "1ce1d136fa3380f936f98436821efed80da01f19",
+    "short": "1ce1d13",
+    "parents": "1b9af071da5e57a036cbb1d45a3cf6470273b9c1",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-25T22:03:25Z",
+    "timestamp": 1769378605,
+    "subject": "feat: add parent notification triggers",
+    "refs": ""
+  },
+  {
+    "sha": "1b9af071da5e57a036cbb1d45a3cf6470273b9c1",
+    "short": "1b9af07",
+    "parents": "e7cf50daa6b96a365f463d432e2f5347167985fa",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-25T21:57:18Z",
+    "timestamp": 1769378238,
+    "subject": "feat: add content rating system for parental controls",
+    "refs": ""
+  },
+  {
+    "sha": "e7cf50daa6b96a365f463d432e2f5347167985fa",
+    "short": "e7cf50d",
+    "parents": "3ec38d7453ee1ac23aa8aae6ab631a48c750cdd1",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-25T21:55:13Z",
+    "timestamp": 1769378113,
+    "subject": "feat: add child-friendly UI with time banners and learning pages",
+    "refs": ""
+  },
+  {
+    "sha": "3ec38d7453ee1ac23aa8aae6ab631a48c750cdd1",
+    "short": "3ec38d7",
+    "parents": "f9cf0955b7f4dbaf30bf8dcef2dc26da66b1c3f5",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-25T21:48:04Z",
+    "timestamp": 1769377684,
+    "subject": "style: apply formatter to parental controls",
+    "refs": ""
+  },
+  {
+    "sha": "f9cf0955b7f4dbaf30bf8dcef2dc26da66b1c3f5",
+    "short": "f9cf095",
+    "parents": "d43ffaf5d6931f1a1587d94db7bd232a9de9c7c7",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-25T21:44:17Z",
+    "timestamp": 1769377457,
+    "subject": "feat: integrate parental controls middleware",
+    "refs": ""
+  },
+  {
+    "sha": "d43ffaf5d6931f1a1587d94db7bd232a9de9c7c7",
+    "short": "d43ffaf",
+    "parents": "8bf764150157c89789ff5b04cf0742a249617360",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-25T16:52:46Z",
+    "timestamp": 1769359966,
+    "subject": "chore: update dependencies to fix security vulnerabilities",
+    "refs": ""
+  },
+  {
+    "sha": "8bf764150157c89789ff5b04cf0742a249617360",
+    "short": "8bf7641",
+    "parents": "b7135830a5a15cd5ce46e1285b4a9d3359400975",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-23T17:03:35Z",
+    "timestamp": 1769187815,
+    "subject": "feat(edu): add multi-model fallback chain for AI exercise generation",
+    "refs": ""
+  },
+  {
+    "sha": "b7135830a5a15cd5ce46e1285b4a9d3359400975",
+    "short": "b713583",
+    "parents": "75dfc20c6756e1016ba864b1d3f76579255f0f98",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-23T02:01:50Z",
+    "timestamp": 1769133710,
+    "subject": "feat: Add AI-powered exercise generation platform",
+    "refs": ""
+  },
+  {
+    "sha": "75dfc20c6756e1016ba864b1d3f76579255f0f98",
+    "short": "75dfc20",
+    "parents": "",
+    "author": "xaoscience",
+    "email": "69734795+xaoscience@users.noreply.github.com",
+    "date": "2026-01-22T16:57:54+01:00",
+    "timestamp": 1769097474,
+    "subject": "Initial commit",
+    "refs": ""
+  }
+],
+  "branches": [
+  {"name":"43c95d3943d5b0886a810fa88298e6c7f3e83d2f Merge pull request #3 from XAOSTECH:humanise/20261015-074801","sha":"*","current":false,"merged":false}
+],
+  "tags": [
+
+]
+}
