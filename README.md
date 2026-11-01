@@ -191,7 +191,7 @@ The platform integrates with lingua.xaostech.io for:
 - **Educational Translation** - `POST /translate/educational`
 - **Etymology Lookup** - `POST /etymology`
 - **Verb Conjugation** - `POST /conjugate`
-- **Linguistic Analysis** - `POST /analyze`
+- **Linguistic Analysis** - `POST /analyse`
 
 ---
 
@@ -229,7 +229,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## 📄 License
+## 📄 Licence
 
 MIT License - see [LICENSE](LICENSE)bash
 # Clone the repository
@@ -361,13 +361,13 @@ See the [open issues](https://github.com/XAOSTECH/edu.xaostech.io/issues) for a 
 
 ---
 
-## 📄 License
+## 📄 Licence
 
 Distributed under the GPL-3.0 License. See [`LICENSE`](LICENSE) for more information.
 
 ---
 
-## 🙏 Acknowledgments
+## 🙏 Acknowledgements
 
 - {{ACKNOWLEDGMENT_1}}
 - {{ACKNOWLEDGMENT_2}}
